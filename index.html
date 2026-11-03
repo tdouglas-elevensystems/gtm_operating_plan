@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Eleven | GTM operating model</title>
+<style>
+:root{
+  --bg:#F7F5F0;--surface:#FFFFFF;--aside:#EFEDE7;--ink:#1B2430;--muted:#5B6675;--navy:#0F3D6B;--blue:#185FA5;--light:#9EC3E8;
+  --row:#EAF1F8;--line:#D9DEE5;--amber-bg:#FFF4DC;--amber:#7A4F00;--amber-line:#D9A23A;
+  --green-bg:#E3F2E8;--green:#1F6B3A;--greenl:#3E9B62;--red:#B23B3B;--head-muted:#B9CDE2;--chip:#174B80;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme:dark;--bg:#0E1620;--surface:#15212E;--aside:#111C27;--ink:#E6ECF2;--muted:#9AA8B8;--navy:#0B2A4A;--blue:#74AEE6;--light:#4E7FB0;
+  --row:#1A2A3B;--line:#2A3B4E;--amber-bg:#3A2C10;--amber:#F3CB78;--amber-line:#B5862C;
+  --green-bg:#133222;--green:#86D6A2;--greenl:#5FBF85;--red:#F08A8A;--head-muted:#9FB6CE;--chip:#123A63;}}
+:root[data-theme="dark"]{
+  color-scheme:dark;--bg:#0E1620;--surface:#15212E;--aside:#111C27;--ink:#E6ECF2;--muted:#9AA8B8;--navy:#0B2A4A;--blue:#74AEE6;--light:#4E7FB0;
+  --row:#1A2A3B;--line:#2A3B4E;--amber-bg:#3A2C10;--amber:#F3CB78;--amber-line:#B5862C;
+  --green-bg:#133222;--green:#86D6A2;--greenl:#5FBF85;--red:#F08A8A;--head-muted:#9FB6CE;--chip:#123A63;}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:14.5px/1.5 Arial,Helvetica,sans-serif}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--navy)}
+header.top{background:var(--navy);color:#fff;padding:18px 24px;display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px}
+header h1{font-size:19px;margin:0;font-weight:700}
+header .sub{font-size:13px;color:var(--head-muted);margin:2px 0 0}
+.presets{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.presets button{font:13px Arial,sans-serif;padding:7px 14px;border-radius:16px;border:1px solid #3A6290;background:transparent;color:#fff;cursor:pointer}
+.presets button.active{background:#185FA5;border-color:#185FA5}
+.save{font-size:12.5px;color:var(--head-muted)}
+.layout{display:grid;grid-template-columns:320px minmax(0,1fr);min-height:calc(100vh - 70px)}
+aside{background:var(--aside);border-right:1px solid var(--line);padding:20px 20px 40px}
+aside h2{font-size:13px;font-weight:700;color:var(--blue);margin:24px 0 10px}
+aside h2:first-child{margin-top:0}
+.ctl{margin-bottom:13px}
+.ctl .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:3px}
+.ctl label{font-size:13px}
+output{font-size:13px;font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums;white-space:nowrap}
+.hint{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.4}
+input[type=range]{width:100%;accent-color:var(--blue)}
+input:not([type=range]):not([type=checkbox]),select{font:inherit;font-size:13px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:5px 7px;min-width:0;width:100%}
+input[type=checkbox]{accent-color:var(--blue)}
+input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px;margin-bottom:10px}
+.card .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.mini{display:grid;grid-template-columns:1fr 64px 64px;gap:6px;align-items:center;font-size:12.5px}
+.mini.h{color:var(--muted);font-size:11.5px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.derived{font-size:12.5px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:8px 10px;line-height:1.55}
+button{font:inherit;font-size:13.5px;cursor:pointer;border-radius:4px;padding:7px 12px;border:1px solid var(--blue);background:var(--blue);color:#fff}
+button.ghost{background:transparent;color:var(--blue)}
+button.x{background:transparent;border:none;color:var(--muted);padding:2px 6px;font-size:17px;line-height:1}
+button.link{background:none;border:none;color:var(--blue);padding:0;font-size:13px;text-decoration:underline}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+main{padding:22px 26px 60px;min-width:0}
+.headline{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.headline .big{font-size:44px;font-weight:700;color:var(--navy);line-height:1.1;font-variant-numeric:tabular-nums}
+:root[data-theme="dark"] .headline .big{color:var(--ink)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .headline .big{color:var(--ink)}}
+.headline .big.alt{color:var(--blue)}
+.headline .vs{color:var(--muted);font-size:15px}
+.hl-label{color:var(--muted);font-size:13.5px;margin:2px 0 16px}
+.stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:18px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+.stat .v{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+.stat .l{font-size:12.5px;color:var(--muted);line-height:1.35}
+.rail{list-style:none;margin:0 0 20px;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.rail li{position:relative;padding:14px 12px 0 0}
+.rail li::before{content:"";position:absolute;left:0;right:0;top:4px;height:3px;background:var(--line)}
+.rail li.on::before{background:var(--blue)}
+.rail li::after{content:"";position:absolute;left:0;top:0;width:11px;height:11px;border-radius:50%;background:var(--surface);border:3px solid var(--line)}
+.rail li.on::after{border-color:var(--blue);background:var(--blue)}
+.rail li.met::after{border-color:var(--greenl);background:var(--greenl)}
+.rail b{display:block;font-size:14px}
+.rail span{font-size:12.5px;color:var(--muted);display:block}
+.chartblock{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px;margin-bottom:16px}
+.chartblock h3{margin:0 0 2px;font-size:15.5px}
+.chartblock p{margin:0 0 8px;color:var(--muted);font-size:13px;max-width:80ch}
+svg.chart{width:100%;height:auto;display:block}
+svg .grid line{stroke:var(--line)}
+svg text{fill:var(--muted);font:11px Arial,Helvetica,sans-serif}
+.legend{display:flex;gap:16px;font-size:12.5px;color:var(--muted);margin-top:4px;flex-wrap:wrap}
+.legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:6px}
+nav.tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--line);margin:26px 0 18px}
+nav.tabs a{padding:10px 12px;color:var(--muted);text-decoration:none;white-space:nowrap;border-bottom:3px solid transparent;font-size:14px}
+nav.tabs a[aria-current="page"]{color:var(--blue);border-bottom-color:var(--blue);font-weight:700}
+h2.sec{font-size:18px;margin:0 0 4px}
+p.lead{margin:0 0 16px;color:var(--muted);max-width:75ch;font-size:13.5px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px;margin-bottom:16px}
+.panel h3{font-size:15px;margin:0 0 8px}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th{text-align:left;font-weight:700;color:var(--muted);font-size:12px;padding:7px 6px;border-bottom:2px solid var(--line);white-space:nowrap}
+td{padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody tr:nth-child(even) td{background:var(--row)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td input.name{min-width:190px}
+.callout{border-left:4px solid var(--amber-line);background:var(--amber-bg);color:var(--amber);padding:9px 13px;border-radius:4px;margin-bottom:14px;font-size:13.5px}
+.callout.ok{border-left-color:var(--green);background:var(--green-bg);color:var(--green)}
+.gates{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.gate{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--blue);border-radius:6px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.gate.met{border-top-color:var(--greenl)}
+.gate .crit{display:flex;gap:6px;align-items:center}
+.gate ul{margin:0;padding-left:18px;font-size:13px;color:var(--muted)}
+.sm{font-size:12.5px;color:var(--muted)}
+.gap{color:var(--red);font-weight:700}
+.okv{color:var(--green);font-weight:700}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.plan td:first-child,.plan th:first-child{position:sticky;left:0;background:var(--surface);z-index:1;min-width:210px}
+.plan tbody tr:nth-child(even) td:first-child{background:var(--row)}
+.plan tr.tot td{font-weight:700;border-top:2px solid var(--line)}
+.track input{width:90px;text-align:right}
+dialog{border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);max-width:min(720px,92vw);width:100%}
+dialog textarea{width:100%;height:260px;font:12px/1.4 Arial,Helvetica,sans-serif;color:var(--ink);background:var(--bg);border:1px solid var(--line)}
+.foot{font-size:12px;color:var(--muted);margin-top:24px;max-width:90ch;line-height:1.55}
+@media (max-width:1100px){.stats{grid-template-columns:repeat(3,minmax(0,1fr))}.gates{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:900px){.layout{grid-template-columns:1fr}aside{border-right:none;border-bottom:1px solid var(--line)}main{padding:18px 16px 50px}.rail{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.gates{grid-template-columns:1fr}.headline .big{font-size:34px}header.top{padding:14px 16px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div><h1>Eleven | GTM operating model</h1><p class="sub">M1 = Nov 2026. Annual prepay, priced from the Playbk module tiers. Prepared by Tim Douglas.</p></div>
+  <div class="presets" role="group" aria-label="Scenario presets" id="presets"></div>
+</header>
+<div class="layout">
+  <aside id="aside" aria-label="Model inputs"></aside>
+  <main id="main"></main>
+</div>
+<dialog id="copyDlg">
+  <h3 id="copyTitle" style="margin-top:0">Copy file contents</h3>
+  <p class="lead" style="margin-bottom:8px">Downloads aren’t available in this view. Copy the text below and paste it into a file.</p>
+  <textarea id="copyText" readonly></textarea>
+  <div class="btns"><button id="copyClose">Close</button></div>
+</dialog>
+<input type="file" id="restoreFile" accept=".json,application/json" hidden>
+<script>
+/* ===== price book (Playbk) ===== */
+const MODS = ['property','financial','family'];
+const MOD = {
+  property:  { label:'Property',  unit:'properties',     tiers:[[3,15000],[5,30000],[10,45000],[20,60000],[Infinity,80000]] },
+  financial: { label:'Financial', unit:'entities',       tiers:[[50,25000],[100,40000],[200,70000],[400,100000],[Infinity,140000]] },
+  family:    { label:'Family',    unit:'family members', tiers:[[1,12000],[3,15000],[6,20000],[8,35000],[Infinity,50000]] }
+};
+function tierOf(m, v){ const n = Math.max(1, Math.round(v)); const t = MOD[m].tiers; for (let i = 0; i < t.length; i++) if (n <= t[i][0]) return {tier:i+1, price:t[i][1]}; return {tier:5, price:t[4][1]}; }
+const tierPrice = (m, v) => v > 0 ? tierOf(m, v).price : 0;
+const BUCKETS = ['COGS','Customer success','R&D','Sales & marketing','G&A'];
+const STATUSES = ['Needs input','Estimate','Actual'];
+const SPEED_K = {1:0.08, 2:0.13, 3:0.20, 4:0.27, 5:0.34};
+const SPEED_N = {1:'Very slow', 2:'Slow', 3:'Medium', 4:'Fast', 5:'Very fast'};
+const TABS = [['gates','Gates'],['price','Price a family'],['spend','Current spend'],['hiring','Hiring'],['marketing','Marketing'],['capacity','Capacity'],['plan','Operating plan'],['track','Track against plan']];
+
+const PRESETS = {
+  cons: { label:'Conservative', target:1, ramp:{on:true, r1:0.25, r2:0.5, m2:5, m3:10}, speed:2, c0:10, cmax:25, renew:90, disc:15 },
+  real: { label:'Realistic',    target:1.75, ramp:{on:true, r1:0.33, r2:0.75, m2:4, m3:9}, speed:3, c0:15, cmax:40, renew:95, disc:10 },
+  up:   { label:'Upside',       target:2.75, ramp:{on:true, r1:0.5, r2:1, m2:4, m3:7}, speed:4, c0:20, cmax:50, renew:97, disc:10 }
+};
+
+const DEFAULT = {
+  version: 2, preset:'real', implStd:true, spendBroad:true,
+  startMonth:'2026-11', horizon:36, cash:0,
+  raises:[ {id:'t1', name:'Seed extension', amt:0, when:'3'}, {id:'t2', name:'Series A', amt:0, when:'g3'} ],
+  existing:[ {id:'e1', name:'Rafferty Holdings', arr:56000, renew:'2027-10'} ],
+  eng:{ target:1.75, ramp:{on:true, r1:0.33, r2:0.75, m2:4, m3:9},
+        mix:{property:60, financial:25, family:15},
+        land:{property:2, financial:40, family:2}, ceil:{property:5, financial:80, family:4},
+        speed:3, c0:15, cmax:40, renew:95,
+        disc:10, credit:2, implPct:20, implBasis:'list', implFloor:0, varPct:8, cac:2000,
+        channelShare:50, advisorPct:12.5 },
+  cap:{ quota:600000, ramp:6, founderSeller:0.5, onboardHrs:80, ongoingHrs:10, csCapacity:130, agentOn:true, agentCut:40 },
+  gates:[
+    { id:'g0', name:'Founder-led', met:true, kind:'families', thr:1, lag:0, criteria:[{t:'First paying customer live', done:true},{t:'Fractional CS leader engaged', done:false}] },
+    { id:'g1', name:'Repeatable onboarding', met:false, kind:'families', thr:3, lag:1, criteria:[{t:'3 live, referenceable accounts', done:false},{t:'Path to Value Level 1 reached in a predictable timeframe', done:false},{t:'First referral-sourced paid deal', done:false}] },
+    { id:'g2', name:'Repeatable selling', met:false, kind:'families', thr:6, lag:1, criteria:[{t:'5 referenceable customers', done:false},{t:'One channel producing qualified opportunities without Tim', done:false},{t:'Sales cycle and win rate measured', done:false}] },
+    { id:'g3', name:'Series A', met:false, kind:'arr', thr:1500000, lag:0, criteria:[{t:'$1M to $3M ARR with sustained growth', done:false},{t:'One institutional vetting cleared', done:false},{t:'Series A closed', done:false}] }
+  ],
+  spend:[
+    {id:'s1', bucket:'COGS', type:'Non-people', name:'Hosting and infrastructure, fixed base', hc:0, monthly:0, status:'Needs input', endGate:''},
+    {id:'s2', bucket:'COGS', type:'Non-people', name:'Third-party data and services', hc:0, monthly:0, status:'Needs input', endGate:''},
+    {id:'s3', bucket:'Customer success', type:'People', name:'Customer Success team', hc:3, monthly:0, status:'Needs input', endGate:''},
+    {id:'s4', bucket:'R&D', type:'People', name:'Product and engineering team', hc:0, monthly:0, status:'Needs input', endGate:''},
+    {id:'s5', bucket:'R&D', type:'Contingent', name:'Development contractors', hc:0, monthly:0, status:'Needs input', endGate:''},
+    {id:'s6', bucket:'R&D', type:'Non-people', name:'R&D tools and services', hc:0, monthly:0, status:'Needs input', endGate:''},
+    {id:'s7', bucket:'Sales & marketing', type:'People', name:'GTM team, employees', hc:1, monthly:0, status:'Needs input', endGate:''},
+    {id:'s8', bucket:'Sales & marketing', type:'Contingent', name:'GTM fractional and contractors', hc:1.5, monthly:25000, status:'Needs input', endGate:''},
+    {id:'s9', bucket:'Sales & marketing', type:'Non-people', name:'GTM tools and data', hc:0, monthly:1000, status:'Needs input', endGate:''},
+    {id:'s10', bucket:'Sales & marketing', type:'Non-people', name:'Travel and events', hc:0, monthly:0, status:'Needs input', endGate:''},
+    {id:'s11', bucket:'G&A', type:'People', name:'Executive and G&A team', hc:0, monthly:0, status:'Needs input', endGate:''},
+    {id:'s12', bucket:'G&A', type:'Contingent', name:'G&A contractors and advisors', hc:0, monthly:0, status:'Needs input', endGate:''},
+    {id:'s13', bucket:'G&A', type:'Non-people', name:'Legal', hc:0, monthly:0, status:'Needs input', endGate:''},
+    {id:'s14', bucket:'G&A', type:'Non-people', name:'Accounting, tax and audit', hc:0, monthly:0, status:'Needs input', endGate:''},
+    {id:'s15', bucket:'G&A', type:'Non-people', name:'Insurance', hc:0, monthly:0, status:'Needs input', endGate:''},
+    {id:'s16', bucket:'G&A', type:'Non-people', name:'Security and compliance', hc:0, monthly:0, status:'Needs input', endGate:''},
+    {id:'s17', bucket:'G&A', type:'Non-people', name:'Software and IT', hc:0, monthly:0, status:'Needs input', endGate:''},
+    {id:'s18', bucket:'G&A', type:'Non-people', name:'Rent and office', hc:0, monthly:0, status:'Needs input', endGate:''},
+    {id:'s19', bucket:'G&A', type:'Non-people', name:'Other G&A', hc:0, monthly:0, status:'Needs input', endGate:''}
+  ],
+  spendCfg:{ burden:20, raise:4, contingency:5 },
+  oneTime:[ {id:'o1', name:'Legal and fees on each raise', amt:0, when:'g3'}, {id:'o2', name:'Bonuses due on Series A close', amt:0, when:'g3'} ],
+  roles:[
+    {id:'r1', name:'Fractional CS leader', type:'Fractional', gate:'g0', offset:1, count:1, monthly:12000, bucket:'Customer success', seller:false, endGate:'g1'},
+    {id:'r2', name:'Head of Customer Success', type:'FTE', gate:'g1', offset:0, count:1, monthly:20000, bucket:'Customer success', seller:false, endGate:''},
+    {id:'r3', name:'Partner and channel manager', type:'FTE', gate:'g1', offset:1, count:1, monthly:17000, bucket:'Sales & marketing', seller:false, endGate:''},
+    {id:'r4', name:'Founding account executive', type:'FTE', gate:'g2', offset:0, count:1, monthly:22000, bucket:'Sales & marketing', seller:true, endGate:''},
+    {id:'r5', name:'Marketing lead', type:'FTE', gate:'g2', offset:1, count:1, monthly:18000, bucket:'Sales & marketing', seller:false, endGate:''},
+    {id:'r6', name:'Customer success manager', type:'FTE', gate:'g2', offset:2, count:1, monthly:13000, bucket:'Customer success', seller:false, endGate:''},
+    {id:'r7', name:'Account executives', type:'FTE', gate:'g3', offset:1, count:2, monthly:22000, bucket:'Sales & marketing', seller:true, endGate:''},
+    {id:'r8', name:'SDR', type:'FTE', gate:'g3', offset:1, count:1, monthly:10000, bucket:'Sales & marketing', seller:false, endGate:''},
+    {id:'r9', name:'Customer success managers', type:'FTE', gate:'g3', offset:2, count:2, monthly:13000, bucket:'Customer success', seller:false, endGate:''},
+    {id:'r10', name:'Revenue operations', type:'FTE', gate:'g3', offset:2, count:1, monthly:15000, bucket:'Sales & marketing', seller:false, endGate:''},
+    {id:'r11', name:'Institutional partner manager', type:'FTE', gate:'g3', offset:3, count:1, monthly:18000, bucket:'Sales & marketing', seller:false, endGate:''}
+  ],
+  programs:[
+    {id:'p1', name:'Content and thought leadership', gate:'g1', offset:0, monthly:4000},
+    {id:'p2', name:'Family office salons and breakfasts', gate:'g1', offset:1, monthly:5000},
+    {id:'p3', name:'Conferences and sponsorships', gate:'g2', offset:0, monthly:8000},
+    {id:'p4', name:'LinkedIn and paid social', gate:'g2', offset:1, monthly:6000},
+    {id:'p5', name:'Demand programs', gate:'g3', offset:1, monthly:20000},
+    {id:'p6', name:'Brand and PR', gate:'g3', offset:2, monthly:8000}
+  ],
+  pf:{ financial:98, property:3, family:2, disc:20 },
+  baseline:null, actuals:{}
+};
+
+const clone = o => JSON.parse(JSON.stringify(o));
+function migrate(s){
+  const d = clone(DEFAULT); if (!s || typeof s !== 'object') return d;
+  if (s.version !== 2){ ['spend','roles','programs'].forEach(k => { if (Array.isArray(s[k])) d[k] = s[k]; }); if (s.cash) d.cash = s.cash; return d; }
+  const o = Object.assign(d, s);
+  o.eng = Object.assign(clone(DEFAULT.eng), s.eng || {}); o.eng.ramp = Object.assign(clone(DEFAULT.eng.ramp), (s.eng || {}).ramp || {});
+  ['mix','land','ceil'].forEach(k => o.eng[k] = Object.assign(clone(DEFAULT.eng[k]), (s.eng || {})[k] || {}));
+  o.cap = Object.assign(clone(DEFAULT.cap), s.cap || {}); o.pf = Object.assign(clone(DEFAULT.pf), s.pf || {});
+  o.actuals = s.actuals || {};
+  if (!s.implStd){ o.eng.implBasis = 'list'; o.implStd = true; }
+  if (!s.spendBroad){ o.spend = clone(DEFAULT.spend); o.spendBroad = true; }
+  o.spendCfg = Object.assign(clone(DEFAULT.spendCfg), s.spendCfg || {}); if (!Array.isArray(s.oneTime)) o.oneTime = clone(DEFAULT.oneTime);
+  return o;
+}
+let state = clone(DEFAULT);
+try { const s = localStorage.getItem('eleven-gtm-model-v2'); if (s) state = migrate(JSON.parse(s)); } catch (e) {}
+
+/* ===== helpers ===== */
+let uid = 1; const nid = p => p + Date.now().toString(36) + (uid++);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num = v => { const n = parseFloat(v); return isFinite(n) ? n : 0; };
+function money(v){ const a = Math.abs(v); const s = a >= 1e6 ? '$' + (a/1e6).toFixed(a >= 1e7 ? 1 : 2) + 'M' : a >= 1e4 ? '$' + Math.round(a/1e3) + 'K' : '$' + Math.round(a).toLocaleString('en-US'); return (v < 0 ? '-' : '') + s; }
+const full = v => (v < 0 ? '-' : '') + '$' + Math.round(Math.abs(v)).toLocaleString('en-US');
+function parseAmt(str){ const t = String(str).trim().toUpperCase().replace(/[$,\s]/g, ''); const m = t.match(/^(-?\d*\.?\d+)([KM]?)$/); if (!m) return null; return Math.round(parseFloat(m[1]) * (m[2] === 'M' ? 1e6 : m[2] === 'K' ? 1e3 : 1)); }
+const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function ymOf(i){ const [y0,m0] = state.startMonth.split('-').map(Number); const t = (m0-1) + i; return [y0 + Math.floor(t/12), ((t%12)+12)%12]; }
+const mLabel = i => { const [y,m] = ymOf(i); return MN[m] + ' ' + String(y).slice(2); };
+const mLong = i => { const [y,m] = ymOf(i); return MN[m] + ' ' + y; };
+const mISO = i => { const [y,m] = ymOf(i); return y + '-' + String(m+1).padStart(2,'0'); };
+function mIdx(ym){ if (!ym) return Infinity; const [y,m] = ym.split('-').map(Number); const [y0,m0] = state.startMonth.split('-').map(Number); return (y-y0)*12 + (m-m0); }
+const gateById = id => state.gates.find(g => g.id === id);
+const gNum = id => state.gates.findIndex(g => g.id === id);
+const mName = i => 'M' + (i+1) + ', ' + mLong(i);
+
+/* ===== engine ===== */
+function model(){
+  const e = state.eng, H = state.horizon, H2 = H + 12, k = SPEED_K[e.speed] || 0.2;
+  const mixT = MODS.reduce((s, m) => s + num(e.mix[m]), 0) || 1;
+  const disc = num(e.disc)/100, c0 = num(e.c0)/100, cmax = Math.max(c0, num(e.cmax)/100), renew = num(e.renew)/100;
+  const pct = num(e.implPct)/100, floor = num(e.implFloor), credit = Math.min(12, num(e.credit));
+  const vol = (m, t) => { const l = Math.max(0, num(e.land[m])), c = Math.max(num(e.ceil[m]), l); if (!l) return 0; const A = (c-l)/l; return c/(1 + A*Math.exp(-k*t)); };
+  const xs = t => t < 3 ? 0 : Math.min(cmax, c0 + (cmax - c0)*(t - 3)/12);
+  const per = [], list = [], surv = [];
+  for (let t = 0; t < H2; t++){
+    let lst = 0;
+    MODS.forEach(L => { const w = num(e.mix[L])/mixT; if (!w) return; MODS.forEach(m => { lst += w * (m === L ? 1 : xs(t)) * tierPrice(m, vol(m, t)); }); });
+    surv.push(Math.pow(renew, Math.floor(t/12))); list.push(lst * surv[t]); per.push(lst * (1 - disc) * surv[t]);
+  }
+  const base = t => e.implBasis === 'list' ? list[t] : per[t];
+  const sign = []; for (let i = 0; i < H2; i++){ const M = i + 1; const r = e.ramp; sign.push(!r.on ? num(e.target) : M >= r.m3 ? num(e.target) : M >= r.m2 ? num(r.r2) : num(r.r1)); }
+  const fam = [], arr = [], coll = [], impl = [], adv = [], newArr = [];
+  for (let i = 0; i < H2; i++){
+    let f = 0, a = 0, c = 0, im = 0;
+    for (let m = 0; m <= i; m++){ const n = sign[m]; if (!n) continue; const age = i - m;
+      f += n * surv[age]; a += n * per[age];
+      if (age === 0){ c += n * per[0] * (1 - credit/12); im += n * Math.max(floor, pct * base(0)); }
+      else { if (age % 12 === 0) c += n * per[age]; else c += n * Math.max(0, per[age] - per[age-1]) * (12 - age % 12)/12;
+             im += n * pct * Math.max(0, base(age) - base(age-1)); } }
+    state.existing.forEach(x => { const r = mIdx(x.renew); const passed = i >= r ? Math.floor((i - r)/12) + 1 : 0; const sv = Math.pow(renew, passed);
+      f += sv; a += num(x.arr) * sv; if (i >= r && (i - r) % 12 === 0) c += num(x.arr) * sv; });
+    fam.push(f); arr.push(a); coll.push(c + im); impl.push(im);
+    adv.push(sign[i] * per[0] * num(e.channelShare)/100 * num(e.advisorPct)/100);
+    newArr.push(sign[i] * per[0]);
+  }
+  /* gates fire on milestones from the engine */
+  const gi = {};
+  state.gates.forEach(g => { if (g.met){ gi[g.id] = 0; return; } const s = g.kind === 'arr' ? arr : fam; let hit = Infinity;
+    for (let i = 0; i < H2; i++) if (s[i] >= num(g.thr) - 1e-9){ hit = i + num(g.lag); break; } gi[g.id] = hit; });
+  const when = w => { if (String(w).startsWith('g')) return gi[w] ?? Infinity; const n = parseInt(w, 10); return isFinite(n) ? n - 1 : Infinity; };
+  /* spend */
+  const z = () => new Array(H).fill(0); const lines = [];
+  const hcAll = z(), hcGTM = z(), csFTE = z(), sellers = z();
+  const gtm = b => b === 'Sales & marketing' || b === 'Customer success';
+  const sc = state.spendCfg || {}, bur = num(sc.burden)/100, rse = num(sc.raise)/100;
+  state.spend.forEach(s => { const v = z(); const end = s.endGate ? gi[s.endGate] ?? Infinity : Infinity; const mult = s.type === 'People' ? 1 + bur : 1;
+    for (let i = 0; i < H; i++) if (i < end){ v[i] = num(s.monthly) * mult * (s.type === 'Non-people' ? 1 : Math.pow(1 + rse, Math.floor(i/12))); hcAll[i] += num(s.hc); if (gtm(s.bucket)) hcGTM[i] += num(s.hc); if (s.bucket === 'Customer success') csFTE[i] += num(s.hc); }
+    lines.push({bucket:s.bucket, name:s.name, kind:'Current', vals:v}); });
+  state.roles.forEach(r => { const v = z(); const st = (gi[r.gate] ?? Infinity) + num(r.offset); const end = r.endGate ? gi[r.endGate] ?? Infinity : Infinity; const fte = (r.type === 'Fractional' ? 0.5 : 1) * num(r.count);
+    for (let i = 0; i < H; i++) if (i >= st && i < end){ v[i] = num(r.monthly) * num(r.count); hcAll[i] += fte; if (gtm(r.bucket)) hcGTM[i] += fte; if (r.bucket === 'Customer success') csFTE[i] += fte;
+      if (r.seller) sellers[i] += num(r.count) * Math.min(1, (i - st + 1)/Math.max(1, num(state.cap.ramp))); }
+    lines.push({bucket:r.bucket, name:r.name + (num(r.count) > 1 ? ' (' + num(r.count) + ')' : ''), kind:'New hire', vals:v, start:st}); });
+  const progV = z();
+  state.programs.forEach(p => { const v = z(); const st = (gi[p.gate] ?? Infinity) + num(p.offset); for (let i = 0; i < H; i++) if (i >= st){ v[i] = num(p.monthly); progV[i] += v[i]; }
+    lines.push({bucket:'Sales & marketing', name:p.name, kind:'Program', vals:v}); });
+  lines.push({bucket:'Sales & marketing', name:'Advisor and referral commissions', kind:'Variable', vals:adv.slice(0, H)});
+  lines.push({bucket:'Sales & marketing', name:'Sales cost per new family', kind:'Variable', vals:sign.slice(0, H).map(n => n * num(e.cac))});
+  lines.push({bucket:'COGS', name:'Variable delivery cost (hosting, AI, connectors)', kind:'Variable', vals:arr.slice(0, H).map(a => a/12 * num(e.varPct)/100)});
+  (state.oneTime || []).forEach(o => { const v = z(); const i = when(o.when); if (i >= 0 && i < H) v[i] = num(o.amt); lines.push({bucket:'G&A', name:o.name, kind:'One-time', vals:v}); });
+  const pre = z(); lines.forEach(l => l.vals.forEach((v, i) => pre[i] += v));
+  lines.push({bucket:'G&A', name:'Contingency', kind:'Contingency', vals:pre.map(v => v * num(sc.contingency)/100)});
+  const byB = {}; BUCKETS.forEach(b => byB[b] = z()); const smPeople = z(), mkt = z();
+  lines.forEach(l => l.vals.forEach((v, i) => { byB[l.bucket][i] += v; if (l.bucket === 'Sales & marketing'){ if (l.kind === 'Program' || l.name.startsWith('Advisor')) mkt[i] += v; else smPeople[i] += v; } }));
+  const spend = z().map((_, i) => BUCKETS.reduce((s, b) => s + byB[b][i], 0));
+  const raise = z(); state.raises.forEach(t => { const i = when(t.when); if (i >= 0 && i < H) raise[i] += num(t.amt); });
+  const net = [], cash = [], cum = []; let bal = num(state.cash), c2 = 0;
+  for (let i = 0; i < H; i++){ const n = coll[i] - spend[i]; net.push(n); c2 += n; cum.push(c2); bal += n + raise[i]; cash.push(bal); }
+  let payg = -1; for (let i = 0; i < H; i++){ if (net[i] >= 0 && net.slice(i).every(v => v >= 0)){ payg = i; break; } }
+  let trough = 0; for (let i = 1; i < H; i++) if (cum[i] < cum[trough]) trough = i;
+  let low = 0; for (let i = 1; i < H; i++) if (cash[i] < cash[low]) low = i;
+  let out = -1; for (let i = 0; i < H; i++) if (cash[i] < 0){ out = i; break; }
+  const cust = fam; const ca = state.cap;
+  const csReq = z().map((_, i) => (sign[i] * num(ca.onboardHrs) * (ca.agentOn ? 1 - num(ca.agentCut)/100 : 1) + fam[i] * num(ca.ongoingHrs)) / Math.max(1, num(ca.csCapacity)));
+  const sellReq = z().map((_, i) => newArr.slice(i, i + 12).reduce((s, v) => s + v, 0) / Math.max(1, num(ca.quota)));
+  const sellPlan = sellers.map(s => s + num(ca.founderSeller));
+  return {H, sign, fam, arr, coll, impl, per, list, spend, lines, byB, smPeople, mkt, progV, adv, raise, net, cash, cum, payg, bridge:Math.max(0, -cum[trough]), trough, low, out,
+    gi, hcAll, hcGTM, csFTE, csReq, sellReq, sellPlan, cust, landACV: per[0], landList: list[0], when};
+}
+/* ===== persistence ===== */
+let dbRef = null, writing = false, pending = false, saveTimer = null, dirty = false;
+function setSave(t){ const el = document.getElementById('saveNote'); if (el) el.textContent = t; }
+function scheduleSave(){
+  dirty = true;
+  try { localStorage.setItem('eleven-gtm-model-v2', JSON.stringify(state)); } catch (e) {}
+  if (!dbRef){ setSave('Saved on this device'); return; }
+  setSave('Saving…'); clearTimeout(saveTimer); saveTimer = setTimeout(flush, 800);
+}
+async function flush(){
+  if (!dbRef) return; if (writing){ pending = true; return; }
+  writing = true;
+  try { await dbRef.set(clone(state)); setSave('Saved'); } catch (e) { setSave('Not synced, saved on this device'); }
+  writing = false; if (pending){ pending = false; flush(); }
+}
+(async () => {
+  if (!window.claude || typeof window.claude.use !== 'function') return;
+  try {
+    const db = await window.claude.use('db'); if (!db) return;
+    const ref = db.doc('plan/current');
+    const snap = await Promise.race([ref.get(), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000))]);
+    dbRef = ref;
+    if (snap.exists && !dirty){ state = migrate(snap.data()); renderAll(); setSave('Saved'); if (snap.data().version !== 2) flush(); }
+    else if (dirty) flush(); else setSave('Saved');
+  } catch (e) { setSave('Saved on this device'); }
+})();
+let dl = null;
+(async () => { try { if (window.claude && window.claude.use) dl = await window.claude.use('downloads'); } catch (e) {} })();
+async function offerFile(filename, text){
+  if (dl){ try { await dl.save({filename, data:text}); return; } catch (e) { if (e && e.code === 'declined') return; } }
+  document.getElementById('copyTitle').textContent = filename;
+  document.getElementById('copyText').value = text;
+  document.getElementById('copyDlg').showModal();
+}
+document.getElementById('copyClose').onclick = () => document.getElementById('copyDlg').close();
+
+/* ===== charts ===== */
+function chart(series, opts){
+  const W = 860, H = opts.h || 270, L = 64, R = 12, T = 14, B = 28; const n = series[0].vals.length;
+  const all = series.flatMap(s => s.vals);
+  let lo = Math.min(0, ...all), hi = Math.max(1, ...all); const pad = (hi - lo) * 0.08; hi += pad; if (lo < 0) lo -= pad;
+  const bw = (W - L - R) / n;
+  const x = i => L + bw * (i + 0.5); const y = v => T + (H - T - B) * (1 - (v - lo)/(hi - lo));
+  let g = '<g class="grid">';
+  for (let k = 0; k <= 4; k++){ const v = lo + (hi - lo)*k/4; g += `<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end">${opts.fmt(v)}</text>`; }
+  g += '</g>';
+  for (let i = 0; i < n; i += 3) g += `<text x="${x(i)}" y="${H-9}" text-anchor="middle">${mLabel(i)}</text>`;
+  if (lo < 0) g += `<line x1="${L}" x2="${W-R}" y1="${y(0)}" y2="${y(0)}" stroke="var(--muted)" stroke-width="1"/>`;
+  (opts.marks || []).forEach(mk => { if (mk.i >= 0 && mk.i < n) g += `<line x1="${x(mk.i)}" x2="${x(mk.i)}" y1="${T}" y2="${H-B}" stroke="var(--muted)" stroke-dasharray="3 3"/><text x="${x(mk.i)+4}" y="${T+10}" style="font-weight:700">${esc(mk.label)}</text>`; });
+  series.filter(s => s.type === 'bar').forEach(s => s.vals.forEach((v, i) => { const y0 = y(0), y1 = y(v);
+    g += `<rect x="${x(i) - bw*0.36}" width="${bw*0.72}" y="${Math.min(y0, y1)}" height="${Math.max(1, Math.abs(y1 - y0))}" fill="${v >= 0 ? s.color : s.neg}" opacity=".85"/>`; }));
+  series.filter(s => s.type !== 'bar').forEach(s => { g += `<polyline fill="none" stroke="${s.color}" stroke-width="2.4" ${s.dash ? 'stroke-dasharray="6 4"' : ''} points="${s.vals.map((v, i) => x(i) + ',' + y(v)).join(' ')}"/>`; });
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opts.label)}">${g}</svg>
+  <div class="legend">${series.map(s => `<span><i style="background:${s.color}${s.dash ? ';opacity:.7' : ''}"></i>${esc(s.name)}</span>`).join('')}</div>`;
+}
+const gateMarks = R => state.gates.slice(1).map((g, k) => ({i:R.gi[g.id], label:'G' + (k + 1)}));
+
+/* ===== controls ===== */
+const FMT = { n2: v => (+num(v).toFixed(2)).toString(), pct: v => num(v) + '%', money: v => full(num(v)), int: v => String(Math.round(num(v))),
+  speed: v => SPEED_N[v] || '', mo: v => num(v) + (num(v) === 1 ? ' month' : ' months'), fam: v => (+num(v).toFixed(2)) + ' /mo' };
+function getPath(path){ return path.split('.').reduce((o, k) => o == null ? o : o[k], state); }
+function setPath(path, val){ const ks = path.split('.'); let o = state; for (let i = 0; i < ks.length - 1; i++) o = o[ks[i]]; o[ks[ks.length - 1]] = val; }
+const slider = (path, label, min, max, step, fmt, hint) => `<div class="ctl"><div class="row"><label for="c-${path}">${label}</label><output data-for="${path}" data-fmt="${fmt}"></output></div>
+  <input type="range" id="c-${path}" data-k="${path}" data-num min="${min}" max="${max}" step="${step}" value="${esc(getPath(path))}">${hint ? `<div class="hint">${hint}</div>` : ''}</div>`;
+const amt = (path, aria, extra = '') => `<input type="text" inputmode="numeric" data-k="${path}" data-amt aria-label="${esc(aria)}" value="${full(num(getPath(path)))}" ${extra}>`;
+const inp = (path, val, type = 'number', cls = '', extra = '') => `<input class="${cls}" type="${type}" data-k="${path}" value="${esc(val)}" ${type === 'number' ? 'data-num inputmode="decimal"' : ''} ${extra}>`;
+const sel = (path, val, opts, extra = '') => `<select data-k="${path}" ${extra}>${opts.map(o => { const [v, l] = Array.isArray(o) ? o : [o, o]; return `<option value="${esc(v)}" ${String(v) === String(val) ? 'selected' : ''}>${esc(l)}</option>`; }).join('')}</select>`;
+const monthOpts = (from = 1) => Array.from({length: state.horizon - from + 1}, (_, k) => [String(from + k), mName(from + k - 1)]);
+const gateOpts = none => (none ? [['', 'None']] : []).concat(state.gates.map((g, i) => [g.id, 'Gate ' + i + ': ' + g.name]));
+
+function renderAside(){
+  const e = state.eng;
+  document.getElementById('aside').innerHTML = `
+  <h2>Capital</h2>
+  <div class="ctl"><div class="row"><label>Cash at start, ${mLong(0)}</label></div>${amt('cash', 'Cash at start, dollars')}<div class="hint">What is in the bank before any raise. Type 750K or 1.5M.</div></div>
+  ${state.raises.map((t, i) => `<div class="card"><div class="row"><input type="text" data-k="raises.${i}.name" value="${esc(t.name)}" aria-label="Raise name" style="font-weight:700;border:none;padding:0;background:transparent"><button class="x" data-act="del" data-list="raises" data-i="${i}" aria-label="Remove raise">×</button></div>
+    <div class="two" style="margin-top:6px">${amt(`raises.${i}.amt`, 'Raise amount')}${sel(`raises.${i}.when`, t.when, [['g1','At Gate 1'],['g2','At Gate 2'],['g3','At Gate 3']].concat(monthOpts()), 'aria-label="When the raise lands"')}</div></div>`).join('')}
+  <button class="ghost" data-act="addRaise">Add raise</button>
+
+  <h2>Customers today</h2>
+  ${state.existing.map((x, i) => `<div class="card"><div class="row"><input type="text" data-k="existing.${i}.name" value="${esc(x.name)}" aria-label="Customer name" style="font-weight:700;border:none;padding:0;background:transparent"><button class="x" data-act="del" data-list="existing" data-i="${i}" aria-label="Remove customer">×</button></div>
+    <div class="two" style="margin-top:6px"><label class="sm">Net ARR ${amt(`existing.${i}.arr`, 'Net ARR')}</label><label class="sm">Renews ${inp(`existing.${i}.renew`, x.renew, 'month')}</label></div></div>`).join('')}
+  <button class="ghost" data-act="addExisting">Add customer</button>
+  <div class="hint">Year one is already collected. The model collects each renewal at its anniversary.</div>
+
+  <h2>Go to market</h2>
+  ${slider('eng.target', 'New families per month, target', 0, 5, 0.25, 'fam')}
+  <div class="card">
+    <label class="row" style="justify-content:flex-start;gap:6px;font-size:13px;font-weight:700"><input type="checkbox" data-k="eng.ramp.on" data-full ${e.ramp.on ? 'checked' : ''}> Ramp up to target</label>
+    ${e.ramp.on ? `<div class="sm" style="display:grid;grid-template-columns:60px auto 1fr;gap:6px;align-items:center;margin-top:6px">
+      ${inp('eng.ramp.r1', e.ramp.r1, 'number', '', 'step="0.05" min="0"')}<span>/mo from</span><span>M1, ${mLong(0)}</span>
+      ${inp('eng.ramp.r2', e.ramp.r2, 'number', '', 'step="0.05" min="0"')}<span>/mo from</span>${sel('eng.ramp.m2', e.ramp.m2, monthOpts(2), 'data-full')}
+      <output data-for="eng.target" data-fmt="n2" style="text-align:right"></output><span>/mo from</span>${sel('eng.ramp.m3', e.ramp.m3, monthOpts(Math.min(state.horizon, num(e.ramp.m2) + 1)), 'data-full')}
+    </div><div class="hint">Signings start slow and step up to the target rate.</div>` : ''}
+  </div>
+  ${slider('eng.channelShare', 'Share sourced by advisors and referrals', 0, 100, 5, 'pct')}
+  ${slider('eng.advisorPct', 'Commission on year-one ARR', 0, 20, 0.5, 'pct', 'Paid in the month the family signs.')}
+  ${slider('eng.cac', 'Sales cost per new family', 0, 10000, 500, 'money', 'Travel, events and proposal work, one time.')}
+
+  <h2>Landing and expansion</h2>
+  <div class="mini h" style="grid-template-columns:1fr 54px 54px 58px"><span>Module</span><span>Lands on</span><span>Land</span><span>Ceiling</span></div>
+  ${MODS.map(m => `<div class="mini" style="grid-template-columns:1fr 54px 54px 58px;margin-top:5px"><span>${MOD[m].label}<br><span class="sm">${MOD[m].unit}</span></span>
+    ${inp(`eng.mix.${m}`, e.mix[m], 'number', '', 'min="0" max="100" step="5" aria-label="' + MOD[m].label + ' share of landings, percent"')}
+    ${inp(`eng.land.${m}`, e.land[m], 'number', '', 'min="0" step="1" aria-label="' + MOD[m].label + ' volume at landing"')}
+    ${inp(`eng.ceil.${m}`, e.ceil[m], 'number', '', 'min="0" step="1" aria-label="' + MOD[m].label + ' volume ceiling"')}</div>`).join('')}
+  <div class="hint" style="margin-bottom:12px">Lands on: share of new families that start on each module, in percent. Land and ceiling set the volume each module starts at and grows toward as Path to Value expands, which moves the family up the Playbk tiers.</div>
+  ${slider('eng.speed', 'Expansion speed', 1, 5, 1, 'speed')}
+  ${slider('eng.c0', 'Cross-sell, starting', 0, 60, 5, 'pct', 'Chance a family has added each other module, from month 3.')}
+  ${slider('eng.cmax', 'Cross-sell, mature', 0, 100, 5, 'pct', 'Reached 12 months later.')}
+  ${slider('eng.renew', 'Annual renewal rate', 70, 100, 1, 'pct')}
+
+  <h2>Pricing and billing</h2>
+  ${slider('eng.disc', 'Average platform discount', 0, 30, 1, 'pct')}
+  ${slider('eng.credit', 'Year-one credit', 0, 3, 1, 'mo', 'Billed annually upfront at signing, less the credit. Additions pro-rata to the anniversary.')}
+  ${slider('eng.implPct', 'Implementation fee', 0, 30, 1, 'pct')}
+  <div class="two" style="margin-bottom:12px"><label class="sm">Fee is a share of ${sel('eng.implBasis', e.implBasis, [['net','net platform fees'],['list','list platform fees']])}</label><label class="sm">Minimum fee ${amt('eng.implFloor', 'Minimum implementation fee')}</label></div>
+  <div class="hint" style="margin:-6px 0 12px">Standard for now: 20% of list. Revisit once Rafferty onboarding hours are in.</div>
+  ${slider('eng.varPct', 'Variable delivery cost', 0, 25, 1, 'pct', 'Hosting, AI and data connectors, as a share of revenue.')}
+  <div class="derived" data-out="derived"></div>
+
+  <h2>Gates</h2>
+  ${state.gates.map((g, i) => `<div class="card"><div class="row"><b style="font-size:13px">Gate ${i}: ${esc(g.name)}</b><label class="row sm" style="gap:5px"><input type="checkbox" data-k="gates.${i}.met" data-full ${g.met ? 'checked' : ''}> Met</label></div>
+    ${i === 0 || g.met ? '' : `<div class="sm" style="display:grid;grid-template-columns:1fr 90px;gap:6px;margin-top:6px;align-items:center">
+      ${sel(`gates.${i}.kind`, g.kind, [['families','Families on platform reach'],['arr','ARR reaches']], 'data-full')}
+      ${g.kind === 'arr' ? amt(`gates.${i}.thr`, 'ARR threshold') : inp(`gates.${i}.thr`, g.thr, 'number', '', 'min="1" step="1" aria-label="Families threshold"')}
+      <span>Months to prove it after that</span>${inp(`gates.${i}.lag`, g.lag, 'number', '', 'min="0" step="1" aria-label="Lag months"')}</div>`}
+  </div>`).join('')}
+  <div class="hint">Gates fire on milestones from the revenue engine, not dates. Hires and programs follow the gates.</div>
+  <p class="sm" style="margin-top:18px" id="saveNote">Saved on this device</p>`;
+}
+
+/* ===== main ===== */
+function current(){ const h = location.hash.slice(1); return TABS.some(t => t[0] === h) ? h : 'gates'; }
+function renderMain(){
+  const v = current();
+  document.getElementById('main').innerHTML = `
+  <div class="headline"><span class="big" id="h-payg"></span><span class="vs">low point</span><span class="big alt" id="h-low"></span></div>
+  <div class="hl-label" id="h-label"></div>
+  <div class="stats" id="stats"></div>
+  <ol class="rail" id="rail" aria-label="Gates"></ol>
+  <div class="chartblock"><h3>Cash balance and ARR</h3><p>Cash at start plus each raise in the month it lands, plus cumulative collections minus spend. ARR is the subscription run rate built from families signed, landing, expansion, cross-sell and price.</p><div id="ch-cash"></div></div>
+  <div class="chartblock"><h3>Monthly collections vs spend</h3><p>Bars show net cash each month. Annual prepay pulls each family’s year forward to signing, so collections arrive in steps at signings and anniversaries.</p><div id="ch-flow"></div></div>
+  <div class="chartblock"><h3>Families on the platform</h3><p>The dashed line is the sustain target: families whose run rate covers monthly spend at the current ARR per family.</p><div id="ch-fam"></div></div>
+  <nav class="tabs" aria-label="Detail">${TABS.map(([k, l]) => `<a href="#${k}" ${k === v ? 'aria-current="page"' : ''}>${l}</a>`).join('')}</nav>
+  <section id="view">${V[v]()}</section>
+  <div class="foot">Mechanics model, not a forecast. Each new family lands on one module at the Playbk tier for its volume, expands along an S curve from land to ceiling, and adds each other module at the cross-sell rate from month 3. List price minus the platform discount gives net ACV. Billing is annual prepay: a family pays a year at signing less the year-one credit, additions are billed pro-rata to the anniversary, and each anniversary renews the then-current ACV at the renewal rate. The implementation fee is collected at signing and on expansion. Spend is the current run rate (people lines with payroll burden and annual raises) plus one-time items, contingency, hires and programs released by gates, plus variable delivery cost, sales cost and commissions.</div>`;
+}
+function refresh(){
+  const R = model(); window.__R = R;
+  const H = R.H; const lastI = H - 1;
+  document.getElementById('h-payg').textContent = R.payg < 0 ? 'Not yet' : 'M' + (R.payg + 1);
+  document.getElementById('h-low').textContent = money(R.cash[R.low]);
+  document.getElementById('h-label').textContent = R.payg < 0 ? `Collections don’t cover spend within ${H} months at these settings. Low point ${mLong(R.low)}.` : `${mLong(R.payg)}: the month collections exceed spend and stay there. Low point ${mLong(R.low)}.`;
+  const famP = R.payg < 0 ? null : R.fam[R.payg];
+  const spendNow = R.spend[0];
+  document.getElementById('stats').innerHTML = [
+    [money(R.bridge), 'One-time bridge to reach pay-as-we-go, before raises'],
+    [num(state.cash) === 0 && state.raises.every(t => !num(t.amt)) ? 'Enter cash' : R.out < 0 ? 'Funded through M' + H : 'Out of cash M' + (R.out + 1), 'Runway with capital raised'],
+    [famP === null ? 'n/a' : famP.toFixed(1), 'Families on the platform at pay-as-we-go'],
+    [money(R.arr[lastI]), `ARR at M${H}, ${R.fam[lastI].toFixed(0)} families`],
+    [money(R.arr[0]/12) + ' vs ' + money(spendNow), 'Run rate vs monthly spend today']
+  ].map(([v, l]) => `<div class="stat"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+  document.getElementById('rail').innerHTML = state.gates.map((g, i) => { const gi = R.gi[g.id]; const on = gi < H;
+    return `<li class="${g.met ? 'met' : on ? 'on' : ''}"><b>Gate ${i}: ${esc(g.name)}</b><span>${g.met ? 'Met' : on ? mName(gi) : 'Not reached in ' + H + ' months'}</span></li>`; }).join('');
+  document.getElementById('ch-cash').innerHTML = chart([{name:'Cash balance', vals:R.cash, color:'var(--blue)'}, {name:'ARR', vals:R.arr.slice(0, H), color:'var(--greenl)', dash:true}], {fmt:money, label:'Cash balance and ARR by month', marks:gateMarks(R)});
+  document.getElementById('ch-flow').innerHTML = chart([{name:'Net cash', vals:R.net, color:'var(--greenl)', neg:'var(--red)', type:'bar'}, {name:'Collections', vals:R.coll.slice(0, H), color:'var(--blue)'}, {name:'Spend', vals:R.spend, color:'var(--amber-line)'}], {fmt:money, label:'Monthly collections, spend and net cash', h:240});
+  const sustain = R.spend.map((s, i) => { const apf = R.fam[i] > 0 ? R.arr[i]/R.fam[i] : R.landACV; return apf > 0 ? s / (apf/12) : 0; });
+  document.getElementById('ch-fam').innerHTML = chart([{name:'Families on the platform', vals:R.fam.slice(0, H), color:'var(--blue)'}, {name:'Sustain target', vals:sustain, color:'var(--muted)', dash:true}], {fmt:v => v.toFixed(0), label:'Families on the platform with the sustain target', marks:gateMarks(R)});
+  const d = document.querySelector('[data-out="derived"]');
+  if (d) d.innerHTML = `Landing ACV per new family: <b>${money(R.landACV)}</b> net (${money(R.landList)} list). Cash at signing: <b>${money(R.landACV * (1 - num(state.eng.credit)/12) + Math.max(num(state.eng.implFloor), num(state.eng.implPct)/100 * (state.eng.implBasis === 'list' ? R.landList : R.landACV)))}</b>, a year prepaid less the credit, plus implementation. ACV at month 24: <b>${money(R.per[23] / Math.pow(num(state.eng.renew)/100, 1) || 0)}</b>.`;
+  document.querySelectorAll('output[data-for]').forEach(o => { o.textContent = FMT[o.dataset.fmt](getPath(o.dataset.for)); });
+  document.querySelectorAll('#view [data-out]').forEach(el => { const f = OUT[el.dataset.out]; if (f) el.innerHTML = f(R); });
+  document.querySelectorAll('#presets button[data-preset]').forEach(b => b.classList.toggle('active', b.dataset.preset === state.preset));
+}
+function renderAll(){ renderAside(); renderMain(); refresh(); }
+
+/* ===== tabs ===== */
+const V = {}, OUT = {};
+const field = (label, html) => `<label class="sm" style="display:flex;flex-direction:column;gap:4px">${label}${html}</label>`;
+
+V.gates = () => `<h2 class="sec">Gates</h2>
+  <p class="lead">A gate opens when the engine reaches its milestone, then holds for the months it takes to prove the evidence. Tick evidence as it becomes real, and mark a gate met in the sidebar when it is.</p>
+  <div class="gates">${state.gates.map((g, i) => `<section class="gate ${g.met ? 'met' : ''}" aria-label="Gate ${i}">
+    <b>Gate ${i}</b>${inp(`gates.${i}.name`, g.name, 'text')}
+    <div class="sm" data-out="gwhen${i}"></div>
+    <div><div class="sm" style="margin-bottom:4px">Evidence</div>
+      ${g.criteria.map((c, k) => `<div class="crit"><input type="checkbox" aria-label="Evidence met" data-k="gates.${i}.criteria.${k}.done" ${c.done ? 'checked' : ''}>${inp(`gates.${i}.criteria.${k}.t`, c.t, 'text')}<button class="x" data-act="delCrit" data-g="${i}" data-c="${k}" aria-label="Remove evidence">×</button></div>`).join('')}
+      <button class="link" style="margin-top:6px" data-act="addCrit" data-g="${i}">Add evidence</button></div>
+    <div><div class="sm" style="margin-bottom:4px">Unlocks</div><ul>${state.roles.filter(r => r.gate === g.id).map(r => `<li>${esc(r.name)}${num(r.count) > 1 ? ' (' + num(r.count) + ')' : ''}</li>`).join('')}${state.programs.filter(p => p.gate === g.id).map(p => `<li>${esc(p.name)} (program)</li>`).join('')}${state.raises.filter(t => t.when === g.id).map(t => `<li>${esc(t.name)} lands</li>`).join('')}</ul></div>
+  </section>`).join('')}</div>`;
+state.gates.forEach((_, i) => OUT['gwhen' + i] = R => { const g = state.gates[i]; const gi = R.gi[g.id];
+  if (g.met) return 'Met'; const trig = g.kind === 'arr' ? money(num(g.thr)) + ' ARR' : num(g.thr) + ' families';
+  return gi < R.H ? `${trig} reached, opens ${mName(gi)}` : `${trig} not reached in ${R.H} months`; });
+
+V.price = () => { const p = state.pf; return `<h2 class="sec">Price a family</h2>
+  <p class="lead">The same Playbk price book the engine uses. Loaded with Rafferty’s scope as the reference: 98 entities, three residences and the family, at a 20% platform discount.</p>
+  <div class="panel"><div class="statgrid">
+    ${MODS.map(m => field(`${MOD[m].label}, ${MOD[m].unit}`, inp(`pf.${m}`, p[m], 'number', '', 'min="0" step="1"'))).join('')}
+    ${field('Platform discount (%)', inp('pf.disc', p.disc, 'number', '', 'min="0" max="50" step="1"'))}
+  </div><div class="btns"><button class="ghost" data-act="rafferty">Load Rafferty’s scope</button></div></div>
+  <div class="panel"><div class="scroll" data-out="priceTable"></div></div>`; };
+OUT.priceTable = () => { const p = state.pf, e = state.eng; let list = 0;
+  const rows = MODS.map(m => { const v = num(p[m]); if (!v) return `<tr><td>${MOD[m].label}</td><td class="num">0</td><td>Not included</td><td class="num">$0</td></tr>`;
+    const t = tierOf(m, v); list += t.price; return `<tr><td>${MOD[m].label}</td><td class="num">${v}</td><td>Tier ${t.tier}</td><td class="num">${full(t.price)}</td></tr>`; }).join('');
+  const disc = list * num(p.disc)/100, net = list - disc;
+  const impl = Math.max(num(e.implFloor), num(e.implPct)/100 * (e.implBasis === 'list' ? list : net));
+  const y1 = net * (1 - num(e.credit)/12);
+  return `<table><thead><tr><th>Module</th><th class="num">Volume</th><th>Tier</th><th class="num">List, annual</th></tr></thead><tbody>${rows}
+    <tr><td><b>List platform fees</b></td><td></td><td></td><td class="num"><b>${full(list)}</b></td></tr>
+    <tr><td>Discount (${num(p.disc)}%)</td><td></td><td></td><td class="num">-${full(disc)}</td></tr>
+    <tr><td><b>Net ACV</b></td><td></td><td></td><td class="num"><b>${full(net)}</b></td></tr>
+    <tr><td>Implementation (${num(e.implPct)}% of ${e.implBasis} platform fees${num(e.implFloor) ? ', minimum ' + full(num(e.implFloor)) : ''})</td><td></td><td></td><td class="num">${full(impl)}</td></tr>
+    <tr><td>Year one platform fees, less ${num(e.credit)}-month credit</td><td></td><td></td><td class="num">${full(y1)}</td></tr>
+    <tr><td><b>Cash at signing</b></td><td></td><td></td><td class="num"><b>${full(y1 + impl)}</b></td></tr></tbody></table>`; };
+
+V.spend = () => `<h2 class="sec">Current spend</h2>
+  <p class="lead">Today’s monthly run rate in broad buckets, not by person. Enter base pay for people lines; the burden adds benefits and payroll taxes. Contractors and fractional roles are entered at cost. Variable delivery cost, sales cost and commissions come from the engine.</p>
+  <div data-out="spendFlag"></div>
+  <div class="panel"><div class="statgrid">
+    ${field('Payroll burden on people lines (%)', inp('spendCfg.burden', state.spendCfg.burden, 'number', '', 'min="0" max="50" step="1"'))}
+    ${field('Annual raise, people and contractors (%)', inp('spendCfg.raise', state.spendCfg.raise, 'number', '', 'min="0" max="20" step="0.5"'))}
+    ${field('Contingency on all spend (%)', inp('spendCfg.contingency', state.spendCfg.contingency, 'number', '', 'min="0" max="25" step="1"'))}
+  </div></div>
+  <div class="panel"><div class="scroll"><table>
+    <thead><tr><th>Bucket</th><th>Line</th><th>Type</th><th class="num">Headcount</th><th class="num">Monthly</th><th>Status</th><th>Ends at</th><th></th></tr></thead>
+    <tbody>${state.spend.map((s, i) => ({s, i})).sort((a, b) => BUCKETS.indexOf(a.s.bucket) - BUCKETS.indexOf(b.s.bucket)).map(({s, i}) => `<tr>
+      <td>${sel(`spend.${i}.bucket`, s.bucket, BUCKETS)}</td><td>${inp(`spend.${i}.name`, s.name, 'text', 'name')}</td><td>${sel(`spend.${i}.type`, s.type || 'Non-people', ['People','Contingent','Non-people'])}</td>
+      <td class="num">${inp(`spend.${i}.hc`, s.hc, 'number', '', 'step="0.5" min="0" style="width:72px"')}</td>
+      <td class="num">${inp(`spend.${i}.monthly`, s.monthly, 'number', '', 'step="500" min="0" style="width:105px"')}</td>
+      <td>${sel(`spend.${i}.status`, s.status, STATUSES)}</td><td>${sel(`spend.${i}.endGate`, s.endGate, gateOpts(true))}</td>
+      <td><button class="x" data-act="del" data-list="spend" data-i="${i}" aria-label="Remove line">×</button></td></tr>`).join('')}</tbody>
+  </table></div><div class="btns"><button class="ghost" data-act="addSpend">Add line</button></div></div>
+  <div class="panel"><h3>One-time items</h3><div class="scroll"><table><thead><tr><th>Item</th><th class="num">Amount</th><th>When</th><th></th></tr></thead><tbody>
+    ${state.oneTime.map((o, i) => `<tr><td>${inp(`oneTime.${i}.name`, o.name, 'text', 'name')}</td><td class="num">${amt(`oneTime.${i}.amt`, 'Amount')}</td>
+      <td>${sel(`oneTime.${i}.when`, o.when, [['g1','At Gate 1'],['g2','At Gate 2'],['g3','At Gate 3']].concat(monthOpts()))}</td>
+      <td><button class="x" data-act="del" data-list="oneTime" data-i="${i}" aria-label="Remove item">×</button></td></tr>`).join('')}</tbody></table></div>
+    <div class="btns"><button class="ghost" data-act="addOneTime">Add one-time item</button></div></div>
+  <div class="panel"><h3>Monthly spend by bucket, M1</h3><div class="scroll" data-out="bucketNow"></div></div>`;
+OUT.bucketNow = R => `<table><thead><tr><th>Bucket</th><th class="num">M1, ${mLabel(0)}</th><th class="num">M12, ${mLabel(11)}</th><th class="num">M24, ${mLabel(23)}</th></tr></thead><tbody>
+  ${BUCKETS.map(b => `<tr><td>${b}</td>${[0, 11, 23].map(i => `<td class="num">${money(R.byB[b][i])}</td>`).join('')}</tr>`).join('')}
+  <tr class="tot"><td><b>Total</b></td>${[0, 11, 23].map(i => `<td class="num"><b>${money(R.spend[i])}</b></td>`).join('')}</tr></tbody></table>`;
+OUT.spendFlag = () => { const n = state.spend.filter(s => s.status === 'Needs input').length;
+  return n ? `<div class="callout">${n} of ${state.spend.length} lines still need actual numbers. Spend, bridge and runway are understated until they’re in.</div>` : `<div class="callout ok">Every spend line has a number behind it.</div>`; };
+
+V.hiring = () => `<h2 class="sec">Hiring</h2>
+  <p class="lead">Each role starts a set number of months after its gate opens. Fractional roles count as half a head. A role can end at a later gate when a permanent hire replaces it.</p>
+  <div class="callout">Loaded monthly costs are Bay Area benchmark assumptions. Replace them with offer-level numbers as each role opens.</div>
+  <div class="panel"><div class="scroll"><table>
+    <thead><tr><th>Role</th><th>Type</th><th>Gate</th><th class="num">Months after</th><th class="num">Count</th><th class="num">Monthly loaded</th><th>Bucket</th><th>Quota</th><th>Ends at</th><th>Starts</th><th></th></tr></thead>
+    <tbody>${state.roles.map((r, i) => `<tr>
+      <td>${inp(`roles.${i}.name`, r.name, 'text', 'name')}</td><td>${sel(`roles.${i}.type`, r.type, ['FTE','Fractional'])}</td>
+      <td>${sel(`roles.${i}.gate`, r.gate, gateOpts(false))}</td>
+      <td class="num">${inp(`roles.${i}.offset`, r.offset, 'number', '', 'min="0" step="1" style="width:64px"')}</td>
+      <td class="num">${inp(`roles.${i}.count`, r.count, 'number', '', 'min="0" step="1" style="width:64px"')}</td>
+      <td class="num">${inp(`roles.${i}.monthly`, r.monthly, 'number', '', 'min="0" step="500" style="width:100px"')}</td>
+      <td>${sel(`roles.${i}.bucket`, r.bucket, BUCKETS)}</td>
+      <td style="text-align:center"><input type="checkbox" aria-label="Carries quota" data-k="roles.${i}.seller" ${r.seller ? 'checked' : ''}></td>
+      <td>${sel(`roles.${i}.endGate`, r.endGate, gateOpts(true))}</td><td class="sm" data-out="start${i}"></td>
+      <td><button class="x" data-act="del" data-list="roles" data-i="${i}" aria-label="Remove role">×</button></td></tr>`).join('')}</tbody>
+  </table></div><div class="btns"><button class="ghost" data-act="addRole">Add role</button></div></div>`;
+for (let i = 0; i < 60; i++) OUT['start' + i] = R => { const l = R.lines.filter(x => x.kind === 'New hire')[i]; if (!l) return ''; return l.start < R.H ? mLabel(l.start) : 'Beyond plan'; };
+
+V.marketing = () => `<h2 class="sec">Marketing investment</h2>
+  <p class="lead">Program spend is $0 today. These lines are proposed starting points, each tied to a gate so spend follows evidence. Advisor commissions and sales cost per family are set in the sidebar and paid as families sign.</p>
+  <div class="callout">Proposed amounts. Edit or remove before this goes into the operating plan.</div>
+  <div class="panel"><div class="scroll"><table>
+    <thead><tr><th>Program</th><th>Starts at</th><th class="num">Months after gate</th><th class="num">Monthly</th><th></th></tr></thead>
+    <tbody>${state.programs.map((p, i) => `<tr><td>${inp(`programs.${i}.name`, p.name, 'text', 'name')}</td><td>${sel(`programs.${i}.gate`, p.gate, gateOpts(false))}</td>
+      <td class="num">${inp(`programs.${i}.offset`, p.offset, 'number', '', 'min="0" step="1" style="width:72px"')}</td>
+      <td class="num">${inp(`programs.${i}.monthly`, p.monthly, 'number', '', 'min="0" step="500" style="width:105px"')}</td>
+      <td><button class="x" data-act="del" data-list="programs" data-i="${i}" aria-label="Remove program">×</button></td></tr>`).join('')}</tbody>
+  </table></div><div class="btns"><button class="ghost" data-act="addProgram">Add program</button></div></div>
+  <div class="statgrid" data-out="mktStats"></div>`;
+OUT.mktStats = R => { const g3 = Math.min(R.gi.g3, R.H); const sum = a => a.slice(0, g3).reduce((s, v) => s + v, 0);
+  const prog = sum(R.progV), adv = sum(R.adv.slice(0, R.H)), newF = sum(R.sign.slice(0, R.H)); const j = Math.min(g3, R.H - 1);
+  return [[money(prog), 'Program spend through Gate 3'], [money(adv), 'Advisor commissions through Gate 3'], [newF.toFixed(1), 'New families through Gate 3'],
+    [newF ? money((prog + adv)/newF) : 'n/a', 'Marketing cost per new family'], [(R.spend[j] ? R.mkt[j]/R.spend[j]*100 : 0).toFixed(0) + '%', 'Marketing share of monthly spend at Gate 3']]
+    .map(([b, s]) => `<div class="stat"><div class="v">${b}</div><div class="l">${s}</div></div>`).join(''); };
+
+V.capacity = () => `<h2 class="sec">Capacity</h2>
+  <p class="lead">Checks the hiring plan against what the engine’s signings and families need. Onboarding is the constraint to watch.</p>
+  <div class="panel"><div class="statgrid">
+    ${field('AE annual quota', amt('cap.quota', 'AE annual quota'))}
+    ${field('AE ramp, months', inp('cap.ramp', state.cap.ramp))}
+    ${field('Tim’s selling capacity, AE equivalents', inp('cap.founderSeller', state.cap.founderSeller, 'number', '', 'step="0.25"'))}
+    ${field('Onboarding hours per new family', inp('cap.onboardHrs', state.cap.onboardHrs))}
+    ${field('Ongoing hours per family, monthly', inp('cap.ongoingHrs', state.cap.ongoingHrs))}
+    ${field('Customer Success hours per FTE, monthly', inp('cap.csCapacity', state.cap.csCapacity))}
+    ${field('Onboarding hours saved by the agent (%)', inp('cap.agentCut', state.cap.agentCut))}
+    <label class="row sm" style="display:flex;gap:8px;align-items:end"><input type="checkbox" data-k="cap.agentOn" ${state.cap.agentOn ? 'checked' : ''}> Onboarding agent in production</label>
+  </div></div>
+  <div class="panel"><h3>Customer Success: FTE needed vs planned</h3><div data-out="csChart"></div></div>
+  <div class="panel"><h3>At each gate</h3><div class="scroll" data-out="capTable"></div></div>`;
+OUT.csChart = R => chart([{name:'FTE needed', vals:R.csReq, color:'var(--amber-line)'}, {name:'FTE planned', vals:R.csFTE, color:'var(--blue)'}], {fmt:v => v.toFixed(1), label:'Customer Success FTE needed vs planned', marks:gateMarks(R), h:230});
+OUT.capTable = R => { const cell = (need, have) => `<span class="${have + 0.05 >= need ? 'okv' : 'gap'}">${have.toFixed(1)} of ${need.toFixed(1)}</span>`;
+  return `<table><thead><tr><th>Gate</th><th>Opens</th><th class="num">ARR</th><th class="num">Families</th><th class="num">CS FTE, planned of needed</th><th class="num">Selling capacity, planned of needed</th></tr></thead><tbody>
+  ${state.gates.map((g, i) => { const gi = R.gi[g.id]; if (gi >= R.H) return `<tr><td>Gate ${i}: ${esc(g.name)}</td><td>Beyond plan</td><td></td><td></td><td></td><td></td></tr>`;
+    return `<tr><td>Gate ${i}: ${esc(g.name)}</td><td>${mLabel(gi)}</td><td class="num">${money(R.arr[gi])}</td><td class="num">${R.fam[gi].toFixed(1)}</td><td class="num">${cell(R.csReq[gi], R.csFTE[gi])}</td><td class="num">${cell(R.sellReq[gi], R.sellPlan[gi])}</td></tr>`; }).join('')}</tbody></table>`; };
+
+function planRows(R){
+  const H = R.H, sl = a => a.slice(0, H);
+  return [['Collections', sl(R.coll)], ['Of which implementation fees', sl(R.impl)], ['ARR, end of month', sl(R.arr)],
+    ['COGS', R.byB['COGS']], ['Customer success', R.byB['Customer success']], ['R&D', R.byB['R&D']],
+    ['Sales & marketing: people, tools and sales cost', R.smPeople], ['Sales & marketing: programs and commissions', R.mkt], ['G&A', R.byB['G&A']],
+    ['Total spend', R.spend, 'tot'], ['Net cash', R.net], ['Raises', R.raise], ['Cash balance', R.cash, 'tot'],
+    ['Families on the platform', sl(R.fam), 'n'], ['New families signed', sl(R.sign), 'n'], ['GTM headcount (FTE)', R.hcGTM, 'n'], ['Total headcount (FTE)', R.hcAll, 'n']];
+}
+V.plan = () => `<h2 class="sec">Operating plan</h2>
+  <p class="lead">Monthly schedule by bucket at the current settings. The CSV carries every line item plus these totals, so it drops into the operating plan.</p>
+  <div class="panel"><div class="scroll plan" data-out="planTable"></div>
+  <div class="btns"><button data-act="csv">Download operating plan CSV</button><button class="ghost" data-act="backup">Download backup</button><button class="ghost" data-act="restore">Restore from backup</button><button class="ghost" data-act="reset">Reset to starting values</button></div></div>`;
+OUT.planTable = R => `<table><thead><tr><th>Line</th>${R.spend.map((_, i) => `<th class="num">M${i+1}<br>${mLabel(i)}</th>`).join('')}</tr></thead><tbody>
+  ${planRows(R).map(([n, v, t]) => `<tr class="${t === 'tot' ? 'tot' : ''}"><td>${n}</td>${v.map(x => `<td class="num ${t !== 'n' && x < -0.5 ? 'gap' : ''}">${t === 'n' ? x.toFixed(1) : money(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+function csv(){
+  const R = model(); const q = s => '"' + String(s).replace(/"/g, '""') + '"';
+  const rows = [['Bucket','Line','Type', ...R.spend.map((_, i) => mISO(i))].map(q).join(',')];
+  R.lines.forEach(l => rows.push([l.bucket, l.name, l.kind, ...l.vals.map(v => Math.round(v))].map(q).join(',')));
+  rows.push('');
+  planRows(R).forEach(([n, v, t]) => rows.push(['Summary', n, '', ...v.map(x => t === 'n' ? x.toFixed(2) : Math.round(x))].map(q).join(',')));
+  return rows.join('\n');
+}
+
+/* track against plan */
+function todayIdx(){ const d = new Date(); return (d.getFullYear() - +state.startMonth.slice(0, 4)) * 12 + (d.getMonth() + 1 - +state.startMonth.slice(5, 7)); }
+V.track = () => `<h2 class="sec">Track against plan</h2>
+  <p class="lead">Lock the current settings as the baseline. Each month, enter the families signed, ARR and cash at month end. The table tallies running counts and shows how far ahead or behind plan you are.</p>
+  <div class="btns" style="margin:0 0 14px"><button data-act="lock">${state.baseline ? 'Re-lock this plan' : 'Lock this plan'}</button><button class="ghost" data-act="trackCsv" ${state.baseline ? '' : 'disabled'}>Export CSV</button><button class="ghost" data-act="clearActuals" ${state.baseline ? '' : 'disabled'}>Clear actuals</button></div>
+  ${state.baseline ? `<p class="sm">Baseline locked ${esc(state.baseline.at)} from the ${esc(state.baseline.preset || 'custom')} settings. Changing inputs afterward never moves it.</p>
+  <div class="panel"><div class="scroll track" data-out="trackTable"></div></div>` : `<div class="callout">No plan locked yet. Set the inputs to the committed plan, then lock it.</div>`}`;
+function trackRows(){ const b = state.baseline; if (!b) return []; const last = Object.keys(state.actuals).map(Number).filter(k => { const a = state.actuals[k]; return a && (a.nf !== '' || a.arr !== '' || a.cash !== ''); });
+  const n = Math.min(b.fam.length, Math.max(3, todayIdx() + 2, ...last.map(k => k + 2)));
+  let cum = b.fam0; const out = [];
+  for (let i = 0; i < n; i++){ const a = state.actuals[i] || {}; const has = a.nf !== undefined && a.nf !== ''; if (has) cum += num(a.nf);
+    out.push({i, planFam:b.fam[i], nf:a.nf ?? '', actFam: has ? cum : null, planArr:b.arr[i], arr:a.arr ?? '', planCash:b.cash[i], cash:a.cash ?? ''}); }
+  return out; }
+OUT.trackTable = () => { const rows = trackRows(); const dv = (a, p, f) => a === '' || a === null ? '' : `<span class="${a - p >= 0 ? 'okv' : 'gap'}">${a - p >= 0 ? '+' : ''}${f(a - p)}</span>`;
+  return `<table><thead><tr><th>Month</th><th class="num">Families, plan</th><th class="num">New families, actual</th><th class="num">Families, actual</th><th class="num">vs plan</th><th class="num">ARR, plan</th><th class="num">ARR, actual</th><th class="num">vs plan</th><th class="num">Cash, plan</th><th class="num">Cash, actual</th><th class="num">vs plan</th></tr></thead><tbody>
+  ${rows.map(r => `<tr><td>M${r.i+1}, ${mLabel(r.i)}</td><td class="num">${r.planFam.toFixed(1)}</td>
+    <td class="num"><input type="number" step="1" min="0" data-act-in="nf" data-i="${r.i}" value="${esc(r.nf)}" aria-label="New families signed, actual"></td>
+    <td class="num">${r.actFam === null ? '' : r.actFam.toFixed(0)}</td><td class="num">${dv(r.actFam, r.planFam, v => v.toFixed(1))}</td>
+    <td class="num">${money(r.planArr)}</td><td class="num"><input type="text" inputmode="numeric" data-act-in="arr" data-i="${r.i}" value="${r.arr === '' ? '' : full(num(r.arr))}" aria-label="ARR, actual"></td><td class="num">${dv(r.arr === '' ? '' : num(r.arr), r.planArr, money)}</td>
+    <td class="num">${money(r.planCash)}</td><td class="num"><input type="text" inputmode="numeric" data-act-in="cash" data-i="${r.i}" value="${r.cash === '' ? '' : full(num(r.cash))}" aria-label="Cash, actual"></td><td class="num">${dv(r.cash === '' ? '' : num(r.cash), r.planCash, money)}</td></tr>`).join('')}</tbody></table>`; };
+
+/* ===== events ===== */
+document.getElementById('presets').innerHTML = Object.entries(PRESETS).map(([k, p]) => `<button data-preset="${k}">${p.label}</button>`).join('') + '<span class="save"></span>';
+document.getElementById('presets').addEventListener('click', e => { const b = e.target.closest('button[data-preset]'); if (!b) return; const p = PRESETS[b.dataset.preset];
+  Object.assign(state.eng, {target:p.target, ramp:clone(p.ramp), speed:p.speed, c0:p.c0, cmax:p.cmax, renew:p.renew, disc:p.disc}); state.preset = b.dataset.preset; scheduleSave(); renderAll(); });
+function onField(e){
+  const t = e.target;
+  if (t.dataset && t.dataset.actIn){ if (e.type === 'input' && t.type !== 'number') return; const i = t.dataset.i; const a = state.actuals[i] = state.actuals[i] || {nf:'', arr:'', cash:''};
+    if (t.dataset.actIn === 'nf') a.nf = t.value; else { const v = t.value.trim() === '' ? '' : parseAmt(t.value); if (v === null) return; a[t.dataset.actIn] = v; }
+    scheduleSave(); if (e.type === 'change'){ const el = document.querySelector('[data-out="trackTable"]'); if (el) el.innerHTML = OUT.trackTable(); } return; }
+  if (!t.dataset || !t.dataset.k) return;
+  if (e.type === 'input' && (t.type === 'checkbox' || t.tagName === 'SELECT' || t.type === 'month')) return;
+  let val;
+  if (t.type === 'checkbox') val = t.checked;
+  else if (t.hasAttribute('data-amt')){ const v = parseAmt(t.value); if (v === null) return; val = v; if (e.type === 'change') t.value = full(v); }
+  else if (t.hasAttribute('data-num')) val = num(t.value);
+  else val = t.value;
+  if (t.type === 'month' && !val) return;
+  if (t.dataset.k === 'eng.ramp.m2' || t.dataset.k === 'eng.ramp.m3') val = num(val);
+  setPath(t.dataset.k, val);
+  if (t.dataset.k.startsWith('eng.') && ['eng.target','eng.ramp','eng.speed','eng.c0','eng.cmax','eng.renew','eng.disc'].some(p => t.dataset.k.startsWith(p))) state.preset = '';
+  if (t.dataset.k === 'eng.ramp.m2' && num(state.eng.ramp.m3) <= num(val)) state.eng.ramp.m3 = Math.min(state.horizon, num(val) + 1);
+  scheduleSave();
+  const structural = e.type === 'change' && (t.hasAttribute('data-full') || (t.tagName === 'SELECT' && t.closest('#view') && current() !== 'spend' && current() !== 'plan'));
+  if (structural) renderAll(); else refresh();
+}
+document.addEventListener('input', onField);
+document.addEventListener('change', onField);
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act;
+  if (a === 'del') state[b.dataset.list].splice(+b.dataset.i, 1);
+  else if (a === 'addRaise') state.raises.push({id:nid('t'), name:'Raise ' + (state.raises.length + 1), amt:500000, when:'13'});
+  else if (a === 'addExisting') state.existing.push({id:nid('e'), name:'New customer', arr:25000, renew:mISO(11)});
+  else if (a === 'addSpend') state.spend.push({id:nid('s'), bucket:'G&A', type:'Non-people', name:'New line', hc:0, monthly:0, status:'Needs input', endGate:''});
+  else if (a === 'addOneTime') state.oneTime.push({id:nid('o'), name:'New item', amt:0, when:'1'});
+  else if (a === 'addRole') state.roles.push({id:nid('r'), name:'New role', type:'FTE', gate:'g2', offset:0, count:1, monthly:15000, bucket:'Sales & marketing', seller:false, endGate:''});
+  else if (a === 'addProgram') state.programs.push({id:nid('p'), name:'New program', gate:'g1', offset:0, monthly:0});
+  else if (a === 'addCrit') state.gates[+b.dataset.g].criteria.push({t:'', done:false});
+  else if (a === 'delCrit') state.gates[+b.dataset.g].criteria.splice(+b.dataset.c, 1);
+  else if (a === 'rafferty') state.pf = clone(DEFAULT.pf);
+  else if (a === 'lock'){ if (state.baseline && !confirm('Replace the locked baseline with the current settings? Actuals you entered stay.')) return;
+    const R = model(); state.baseline = {at:new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}), preset:(PRESETS[state.preset] || {}).label || 'custom',
+      fam:R.fam.slice(0, R.H).map(v => +v.toFixed(3)), arr:R.arr.slice(0, R.H).map(Math.round), cash:R.cash.map(Math.round), fam0:state.existing.length}; }
+  else if (a === 'clearActuals'){ if (!confirm('Clear every actual you entered?')) return; state.actuals = {}; }
+  else if (a === 'trackCsv'){ const q = s => '"' + String(s).replace(/"/g, '""') + '"'; const rows = [['Month','Families plan','New families actual','Families actual','ARR plan','ARR actual','Cash plan','Cash actual'].map(q).join(',')];
+    trackRows().forEach(r => rows.push([mISO(r.i), r.planFam.toFixed(2), r.nf, r.actFam ?? '', r.planArr, r.arr, r.planCash, r.cash].map(q).join(','))); offerFile('eleven-track-against-plan.csv', rows.join('\n')); return; }
+  else if (a === 'csv'){ offerFile('eleven-operating-plan.csv', csv()); return; }
+  else if (a === 'backup'){ offerFile('eleven-gtm-model-backup.json', JSON.stringify(state, null, 2)); return; }
+  else if (a === 'restore'){ document.getElementById('restoreFile').click(); return; }
+  else if (a === 'reset'){ if (!confirm('Reset every input to the starting values? Download a backup first if you want to keep this version.')) return; state = clone(DEFAULT); }
+  else return;
+  scheduleSave(); renderAll();
+});
+document.getElementById('restoreFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try { state = migrate(JSON.parse(await f.text())); scheduleSave(); renderAll(); }
+  catch (err) { alert('That file isn’t a backup from this model. Choose the JSON file from “Download backup”.'); }
+  e.target.value = '';
+});
+window.addEventListener('hashchange', () => { renderMain(); refresh(); });
+renderAll();
+
+</script>
+</body>
+</html>
