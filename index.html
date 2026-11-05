@@ -120,6 +120,15 @@ dialog textarea{width:100%;height:260px;font:12px/1.4 Arial,Helvetica,sans-serif
 @media (max-width:520px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.gates{grid-template-columns:1fr}.headline .big{font-size:34px}header.top{padding:14px 16px}}
 
 
+.capgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin:12px 0}
+.capcol{border:1px solid var(--line);border-radius:6px;padding:10px 14px 4px;background:var(--surface)}
+.capcol h4{margin:0 0 4px;font-size:14px;color:var(--blue)}
+.caprow{display:grid;grid-template-columns:minmax(0,1fr) 110px;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}
+.caprow input:not([type=checkbox]){text-align:right;width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+.capin input:not([type=checkbox]){width:70px}
+.capv{text-align:right;padding-right:8px}
+.capin{display:flex;align-items:center;gap:4px}
+.capcol .hint{margin:6px 0 8px}
 .statgrid label{min-width:0}.statgrid input{width:100%;min-width:0}
 details.chartblock summary{cursor:pointer;font-size:15.5px;list-style-position:inside}
 </style>
@@ -154,17 +163,17 @@ const BK = {'COGS':'cogs','Customer success':'cs','R&D':'rd','Sales & marketing'
 const STATUSES = ['Workbook estimate','Check overlap','Confirmed','Needs input'];
 
 const PRESETS = {
-  cons: { label:'Conservative', target:2,    ramp:{on:true, r1:0.5,  r2:1,    m2:5, m3:10}, blend:50000, renew:90 },
-  real: { label:'Realistic',    target:4,    ramp:{on:true, r1:1,    r2:2,    m2:4, m3:9},  blend:60000, renew:95 },
-  up:   { label:'Upside',       target:6,    ramp:{on:true, r1:1.5,  r2:3,    m2:4, m3:7},  blend:70000, renew:97 }
+  cons: { label:'Conservative', target:2,    ramp:{on:true, r1:0.5,  r2:1,    m2:6, m3:12}, blend:50000, renew:90 },
+  real: { label:'Realistic',    target:3,    ramp:{on:true, r1:1,    r2:2,    m2:6, m3:12},  blend:60000, renew:95 },
+  up:   { label:'Upside',       target:4,    ramp:{on:true, r1:1.5,  r2:3,    m2:6, m3:12},  blend:70000, renew:97 }
 };
 const DEFAULT = {
   version:3, preset:'real', startMonth:'2026-11', horizon:36, cash:7500000,
   raises:[ {id:'t1', name:'Seed extension', amt:1000000, mo:4}, {id:'t2', name:'Series A', amt:0, mo:24} ],
   existing:[ {id:'e1', name:'Rafferty Holdings', arr:56000, renew:'2027-10'} ],
-  eng:{ target:4, ramp:{on:true, r1:1, r2:2, m2:4, m3:9}, blend:60000, uplift:0, renew:95, credit:2, implPct:20, cac:2000 },
+  eng:{ target:3, ramp:{on:true, r1:1, r2:2, m2:6, m3:12}, blend:60000, uplift:0, renew:95, credit:2, implPct:20, cac:2000 },
   opex:{ today:{cogs:23062, cs:26642, rd:149966, sm:74312, ga:37733}, raise:{cogs:0, cs:12000, rd:0, sm:26000, ga:0}, fam:{cogs:2000, cs:13000, rd:0, sm:54000, ga:3000}, n:6 },
-  pf:{ financial:98, property:3, family:12, disc:20 }, pfTrusts:true, rampV2:true, costsWB:true, spendLines:true, cash75:true,
+  pf:{ financial:98, property:3, family:12, disc:20 }, pfTrusts:true, rampV2:true, rampV3:true, costsWB:true, spendLines:true, cash75:true,
   spend:[
     {id:'s1', bucket:'COGS', name:'Hosting and infrastructure', hc:0, monthly:14529, status:'Workbook estimate'},
     {id:'s2', bucket:'COGS', name:'Third-party data feeds (Yodlee, EODHD)', hc:0, monthly:1250, status:'Workbook estimate'},
@@ -197,6 +206,7 @@ function migrate(s){
     o.opex = Object.assign(clone(DEFAULT.opex), s.opex || {}); ['today','raise','fam'].forEach(k => o.opex[k] = Object.assign(clone(DEFAULT.opex[k]), (s.opex || {})[k] || {}));
     o.pf = Object.assign(clone(DEFAULT.pf), s.pf || {}); if (!s.pfTrusts){ o.pf = clone(DEFAULT.pf); o.pfTrusts = true; }
     if (!s.rampV2){ o.eng.target = DEFAULT.eng.target; o.eng.ramp = clone(DEFAULT.eng.ramp); o.preset = 'real'; o.rampV2 = true; }
+    if (!s.rampV3){ o.eng.target = DEFAULT.eng.target; o.eng.ramp = clone(DEFAULT.eng.ramp); o.preset = 'real'; o.rampV3 = true; }
     if (!s.costsWB){ o.opex.today = clone(DEFAULT.opex.today); o.costsWB = true; }
     if (!s.spendLines || !Array.isArray(s.spend)){ o.spend = clone(DEFAULT.spend); o.spendLines = true; }
     o.cap = Object.assign(clone(DEFAULT.cap), s.cap || {});
@@ -403,16 +413,21 @@ function renderMain(){
       <td>${sel(`spend.${i}.status`, l.status, STATUSES.map(v => [v, v]), 'aria-label="Status"')}</td><td><button class="x" data-act="del" data-list="spend" data-i="${i}" aria-label="Remove line">×</button></td></tr>`).join('')}</tbody></table></div>
     <div class="btns"><button class="ghost" data-act="addSpend">Add line</button></div>
     <div class="scroll" style="margin-top:12px" data-out="spendTotals"></div></details>
-  <details class="chartblock" data-sec="cap" ${OPEN.has('cap') ? 'open' : ''}><summary><b>Capacity</b></summary><p style="margin-top:8px">Checks Customer Success and selling capacity against the signings in the plan. Onboarding is the constraint to watch. The reference workbook prices onboarding at roughly 560 hours per family.</p>
-    <div class="statgrid">
-      ${[['cap.onboardHrs','Onboarding hours per new family'],['cap.agentCut','Hours saved by the onboarding agent (%)'],['cap.ongoingHrs','Ongoing hours per family, monthly'],['cap.csHrs','CS hours per FTE, monthly'],['cap.csRaise','CS FTE added at the raise step'],['cap.csFam','CS FTE added at the families step']].map(([k, l]) => `<label class="sm" style="display:flex;flex-direction:column;gap:4px">${l}${inp(k, getPath(k), 'number', 'min="0" step="0.5"')}</label>`).join('')}
-      <label class="sm" style="display:flex;gap:8px;align-items:end"><input type="checkbox" data-k="cap.agentOn" ${state.cap.agentOn ? 'checked' : ''}> Onboarding agent in production</label>
+  <details class="chartblock" data-sec="cap" ${OPEN.has('cap') ? 'open' : ''}><summary><b>Capacity</b></summary><p style="margin-top:8px">Checks Customer Success and selling capacity against the signings in the plan. Onboarding is the constraint to watch.</p>
+    <div class="capgrid">
+      <section class="capcol" aria-label="Customer Success assumptions"><h4>Customer Success</h4>
+        <div class="caprow"><span>FTE today, from spend lines</span><b class="capv" data-out="csToday"></b></div>
+        ${[['cap.onboardHrs','Onboarding hours per new family','1'],['cap.ongoingHrs','Ongoing hours per family, monthly','1'],['cap.csHrs','Hours per FTE, monthly','5'],['cap.csRaise','FTE added at the raise step','0.5'],['cap.csFam','FTE added at the families step','0.5']].map(([k, l, st]) => `<label class="caprow"><span>${l}</span>${inp(k, getPath(k), 'number', 'min="0" step="' + st + '" aria-label="' + l + '"')}</label>`).join('')}
+        <div class="caprow"><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-k="cap.agentOn" ${state.cap.agentOn ? 'checked' : ''}> Onboarding agent saves</label><span class="capin">${inp('cap.agentCut', state.cap.agentCut, 'number', 'min="0" max="90" step="5" aria-label="Onboarding hours saved by the agent, percent"')}<span>%</span></span></div>
+        <p class="hint">The reference workbook prices onboarding at roughly 560 hours per family.</p>
+      </section>
+      <section class="capcol" aria-label="Selling assumptions"><h4>Selling</h4>
+        <label class="caprow"><span>Annual new-ARR quota per seller</span>${amt('cap.quota', 'Annual new-ARR quota per seller')}</label>
+        ${[['cap.founder','Your selling capacity, seller equivalents'],['cap.sellToday','Other sellers today'],['cap.sellFam','Sellers added at the families step']].map(([k, l]) => `<label class="caprow"><span>${l}</span>${inp(k, getPath(k), 'number', 'min="0" step="0.25" aria-label="' + l + '"')}</label>`).join('')}
+        <p class="hint">Sellers needed is the next 12 months of new ARR divided by quota.</p>
+      </section>
     </div>
-    <div class="statgrid" style="margin-top:10px">
-      <label class="sm" style="display:flex;flex-direction:column;gap:4px">Annual new-ARR quota per seller${amt('cap.quota', 'Annual quota per seller')}</label>
-      ${[['cap.founder','Your selling capacity, seller equivalents'],['cap.sellToday','Other sellers today'],['cap.sellFam','Sellers added at the families step']].map(([k, l]) => `<label class="sm" style="display:flex;flex-direction:column;gap:4px">${l}${inp(k, getPath(k), 'number', 'min="0" step="0.25"')}</label>`).join('')}
-    </div>
-    <p class="sm" style="margin-top:10px">CS FTE planned is headcount on the Customer success lines plus the step additions. Sellers needed is the next 12 months of new ARR divided by quota.</p>
+    <div data-out="capSummary"></div>
     <div data-out="csChart"></div><div class="scroll" style="margin-top:10px" data-out="capTable"></div></details>
   <details class="chartblock"><summary><b>Operating plan by month</b></summary><p style="margin-top:8px">Bucket totals for each month, ready to drop into the plan.</p><div class="scroll plan" data-out="planTable"></div>
     <div class="btns"><button data-act="csv">Download operating plan CSV</button><button class="ghost" data-act="backup">Download backup</button><button class="ghost" data-act="restore">Restore from backup</button><button class="ghost" data-act="reset">Reset to starting values</button></div></details>
@@ -436,6 +451,11 @@ OUT.spendTotals = () => { const t = spendToday(); const hc = b => state.spend.fi
   return `<table><thead><tr><th>Bucket</th><th class="num">Headcount</th><th class="num">Monthly</th><th class="num">Annual</th></tr></thead><tbody>${BUCKETS.map(b => `<tr><td>${b}</td><td class="num">${hc(b)}</td><td class="num">${full(t[b])}</td><td class="num">${money(t[b]*12)}</td></tr>`).join('')}
   <tr class="tot"><td><b>Total</b></td><td class="num"><b>${BUCKETS.reduce((s, b) => s + hc(b), 0)}</b></td><td class="num"><b>${full(Object.values(t).reduce((s, v) => s + v, 0))}</b></td><td class="num"><b>${money(Object.values(t).reduce((s, v) => s + v, 0)*12)}</b></td></tr></tbody></table>`; };
 OUT.csChart = R => chart([{name:'CS FTE needed', vals:R.csReq, color:'var(--amber-line)'}, {name:'CS FTE planned', vals:R.csPlan, color:'var(--blue)'}], {fmt:v => v.toFixed(1), label:'Customer Success FTE needed vs planned', marks:marks(R), h:230});
+OUT.csToday = () => state.spend.filter(l => l.bucket === 'Customer success').reduce((t, l) => t + num(l.hc), 0).toFixed(1);
+OUT.capSummary = R => { const short = (need, have) => { for (let i = 0; i < R.H; i++) if (have[i] + 0.05 < need[i]) return i; return -1; };
+  const cs = short(R.csReq, R.csPlan), sl = short(R.sellReq, R.sellPlan);
+  const msg = (name, i, need, have) => i < 0 ? `${name} covers the plan through M${R.H}.` : `${name} falls short from ${mName(i)}: ${have[R.H-1].toFixed(1)} planned against ${need[R.H-1].toFixed(1)} needed by M${R.H}.`;
+  return `<div class="callout${cs < 0 && sl < 0 ? ' ok' : ''}">${msg('Customer Success', cs, R.csReq, R.csPlan)} ${msg('Selling capacity', sl, R.sellReq, R.sellPlan)}</div>`; };
 OUT.capTable = R => { const c = (need, have) => `<span class="${have + 0.05 >= need ? 'okv' : 'gap'}">${have.toFixed(1)} of ${need.toFixed(1)}</span>`;
   return `<table><thead><tr><th>Month</th><th class="num">New families</th><th class="num">Families live</th><th class="num">CS FTE, planned of needed</th><th class="num">Sellers, planned of needed</th></tr></thead><tbody>
   ${[2, 5, 11, 17, 23, 35].filter(i => i < R.H).map(i => `<tr><td>M${i+1}, ${mLabel(i)}</td><td class="num">${R.sign[i].toFixed(2)}</td><td class="num">${R.fam[i].toFixed(1)}</td><td class="num">${c(R.csReq[i], R.csPlan[i])}</td><td class="num">${c(R.sellReq[i], R.sellPlan[i])}</td></tr>`).join('')}</tbody></table>`; };
