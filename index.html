@@ -6,29 +6,29 @@
 <title>Eleven | GTM operating model</title>
 <style>
 :root{
-  --bg:#F7F5F0;--surface:#FFFFFF;--aside:#EFEDE7;--ink:#1B2430;--muted:#5B6675;--navy:#0F3D6B;--blue:#185FA5;--light:#9EC3E8;
-  --row:#EAF1F8;--line:#D9DEE5;--amber-bg:#FFF4DC;--amber:#7A4F00;--amber-line:#D9A23A;
-  --green-bg:#E3F2E8;--green:#1F6B3A;--greenl:#3E9B62;--red:#B23B3B;--head-muted:#B9CDE2;--chip:#174B80;
+  color-scheme:dark;--bg:#000000;--surface:#121212;--aside:#0A0A0A;--ink:#FFFFFF;--muted:#B3B3B3;--navy:#000000;--blue:#6DCFF6;--btn:#1175B6;--light:#1175B6;
+  --row:#181818;--line:#2A2A2A;--th:#353535;--amber-bg:#24180B;--amber:#EE9D4E;--amber-line:#EE9D4E;
+  --green-bg:#0B2215;--green:#1ED760;--greenl:#1ED760;--red:#F15E6C;--head-muted:#B3B3B3;--chip:#353535;
   box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  color-scheme:dark;--bg:#0E1620;--surface:#15212E;--aside:#111C27;--ink:#E6ECF2;--muted:#9AA8B8;--navy:#0B2A4A;--blue:#74AEE6;--light:#4E7FB0;
-  --row:#1A2A3B;--line:#2A3B4E;--amber-bg:#3A2C10;--amber:#F3CB78;--amber-line:#B5862C;
-  --green-bg:#133222;--green:#86D6A2;--greenl:#5FBF85;--red:#F08A8A;--head-muted:#9FB6CE;--chip:#123A63;}}
+  color-scheme:dark;--bg:#000000;--surface:#121212;--aside:#0A0A0A;--ink:#FFFFFF;--muted:#B3B3B3;--navy:#000000;--blue:#6DCFF6;--btn:#1175B6;--light:#1175B6;
+  --row:#181818;--line:#2A2A2A;--th:#353535;--amber-bg:#24180B;--amber:#EE9D4E;--amber-line:#EE9D4E;
+  --green-bg:#0B2215;--green:#1ED760;--greenl:#1ED760;--red:#F15E6C;--head-muted:#B3B3B3;--chip:#353535;}}
 :root[data-theme="dark"]{
-  color-scheme:dark;--bg:#0E1620;--surface:#15212E;--aside:#111C27;--ink:#E6ECF2;--muted:#9AA8B8;--navy:#0B2A4A;--blue:#74AEE6;--light:#4E7FB0;
-  --row:#1A2A3B;--line:#2A3B4E;--amber-bg:#3A2C10;--amber:#F3CB78;--amber-line:#B5862C;
-  --green-bg:#133222;--green:#86D6A2;--greenl:#5FBF85;--red:#F08A8A;--head-muted:#9FB6CE;--chip:#123A63;}
+  color-scheme:dark;--bg:#000000;--surface:#121212;--aside:#0A0A0A;--ink:#FFFFFF;--muted:#B3B3B3;--navy:#000000;--blue:#6DCFF6;--btn:#1175B6;--light:#1175B6;
+  --row:#181818;--line:#2A2A2A;--th:#353535;--amber-bg:#24180B;--amber:#EE9D4E;--amber-line:#EE9D4E;
+  --green-bg:#0B2215;--green:#1ED760;--greenl:#1ED760;--red:#F15E6C;--head-muted:#B3B3B3;--chip:#353535;}
 *,*::before,*::after{box-sizing:inherit}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--ink);font:14.5px/1.5 Arial,Helvetica,sans-serif}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--navy)}
-header.top{background:var(--navy);color:#fff;padding:18px 24px;display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px}
+header.top{background:var(--navy);border-bottom:1px solid var(--line);color:#fff;padding:18px 24px;display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px}
 header h1{font-size:19px;margin:0;font-weight:700}
 header .sub{font-size:13px;color:var(--head-muted);margin:2px 0 0}
 .presets{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.presets button{font:13px Arial,sans-serif;padding:7px 14px;border-radius:16px;border:1px solid #3A6290;background:transparent;color:#fff;cursor:pointer}
-.presets button.active{background:#185FA5;border-color:#185FA5}
+.presets button{font:13px Arial,sans-serif;padding:7px 14px;border-radius:16px;border:1px solid var(--th);background:transparent;color:#fff;cursor:pointer}
+.presets button.active{background:var(--btn);border-color:var(--btn)}
 .save{font-size:12.5px;color:var(--head-muted)}
 .layout{display:grid;grid-template-columns:320px minmax(0,1fr);min-height:calc(100vh - 70px)}
 aside{background:var(--aside);border-right:1px solid var(--line);padding:20px 20px 40px}
@@ -39,9 +39,9 @@ aside h2:first-child{margin-top:0}
 .ctl label{font-size:13px}
 output{font-size:13px;font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums;white-space:nowrap}
 .hint{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.4}
-input[type=range]{width:100%;accent-color:var(--blue)}
+input[type=range]{width:100%;accent-color:var(--btn)}
 input:not([type=range]):not([type=checkbox]),select{font:inherit;font-size:13px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:5px 7px;min-width:0;width:100%}
-input[type=checkbox]{accent-color:var(--blue)}
+input[type=checkbox]{accent-color:var(--btn)}
 input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px;margin-bottom:10px}
 .card .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -49,14 +49,14 @@ input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{ou
 .mini.h{color:var(--muted);font-size:11.5px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .derived{font-size:12.5px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:8px 10px;line-height:1.55}
-button{font:inherit;font-size:13.5px;cursor:pointer;border-radius:4px;padding:7px 12px;border:1px solid var(--blue);background:var(--blue);color:#fff}
+button{font:inherit;font-size:13.5px;cursor:pointer;border-radius:4px;padding:7px 12px;border:1px solid var(--btn);background:var(--btn);color:#fff}
 button.ghost{background:transparent;color:var(--blue)}
 button.x{background:transparent;border:none;color:var(--muted);padding:2px 6px;font-size:17px;line-height:1}
 button.link{background:none;border:none;color:var(--blue);padding:0;font-size:13px;text-decoration:underline}
 .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 main{padding:22px 26px 60px;min-width:0}
 .headline{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
-.headline .big{font-size:44px;font-weight:700;color:var(--navy);line-height:1.1;font-variant-numeric:tabular-nums}
+.headline .big{font-size:44px;font-weight:700;color:var(--ink);line-height:1.1;font-variant-numeric:tabular-nums}
 :root[data-theme="dark"] .headline .big{color:var(--ink)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .headline .big{color:var(--ink)}}
 .headline .big.alt{color:var(--blue)}
@@ -69,9 +69,9 @@ main{padding:22px 26px 60px;min-width:0}
 .rail{list-style:none;margin:0 0 20px;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
 .rail li{position:relative;padding:14px 12px 0 0}
 .rail li::before{content:"";position:absolute;left:0;right:0;top:4px;height:3px;background:var(--line)}
-.rail li.on::before{background:var(--blue)}
+.rail li.on::before{background:var(--btn)}
 .rail li::after{content:"";position:absolute;left:0;top:0;width:11px;height:11px;border-radius:50%;background:var(--surface);border:3px solid var(--line)}
-.rail li.on::after{border-color:var(--blue);background:var(--blue)}
+.rail li.on::after{border-color:var(--btn);background:var(--btn)}
 .rail li.met::after{border-color:var(--greenl);background:var(--greenl)}
 .rail b{display:block;font-size:14px}
 .rail span{font-size:12.5px;color:var(--muted);display:block}
@@ -92,7 +92,7 @@ p.lead{margin:0 0 16px;color:var(--muted);max-width:75ch;font-size:13.5px}
 .panel h3{font-size:15px;margin:0 0 8px}
 .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table{border-collapse:collapse;width:100%;font-size:13.5px}
-th{text-align:left;font-weight:700;color:var(--muted);font-size:12px;padding:7px 6px;border-bottom:2px solid var(--line);white-space:nowrap}
+th{text-align:left;font-weight:700;color:#fff;background:var(--th);font-size:12px;padding:7px 6px;border-bottom:2px solid var(--th);white-space:nowrap}
 td{padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
 tbody tr:nth-child(even) td{background:var(--row)}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -100,7 +100,7 @@ td input.name{min-width:190px}
 .callout{border-left:4px solid var(--amber-line);background:var(--amber-bg);color:var(--amber);padding:9px 13px;border-radius:4px;margin-bottom:14px;font-size:13.5px}
 .callout.ok{border-left-color:var(--green);background:var(--green-bg);color:var(--green)}
 .gates{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-.gate{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--blue);border-radius:6px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.gate{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--btn);border-radius:6px;padding:12px;display:flex;flex-direction:column;gap:8px}
 .gate.met{border-top-color:var(--greenl)}
 .gate .crit{display:flex;gap:6px;align-items:center}
 .gate ul{margin:0;padding-left:18px;font-size:13px;color:var(--muted)}
@@ -109,6 +109,7 @@ td input.name{min-width:190px}
 .okv{color:var(--green);font-weight:700}
 .statgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
 .plan td:first-child,.plan th:first-child{position:sticky;left:0;background:var(--surface);z-index:1;min-width:210px}
+.plan th:first-child{background:var(--th)}
 .plan tbody tr:nth-child(even) td:first-child{background:var(--row)}
 .plan tr.tot td{font-weight:700;border-top:2px solid var(--line)}
 .track input{width:90px;text-align:right}
@@ -450,7 +451,7 @@ OUT.spendFlag = () => { const n = state.spend.filter(l => l.status === 'Check ov
 OUT.spendTotals = () => { const t = spendToday(); const hc = b => state.spend.filter(l => l.bucket === b).reduce((s, l) => s + num(l.hc), 0);
   return `<table><thead><tr><th>Bucket</th><th class="num">Headcount</th><th class="num">Monthly</th><th class="num">Annual</th></tr></thead><tbody>${BUCKETS.map(b => `<tr><td>${b}</td><td class="num">${hc(b)}</td><td class="num">${full(t[b])}</td><td class="num">${money(t[b]*12)}</td></tr>`).join('')}
   <tr class="tot"><td><b>Total</b></td><td class="num"><b>${BUCKETS.reduce((s, b) => s + hc(b), 0)}</b></td><td class="num"><b>${full(Object.values(t).reduce((s, v) => s + v, 0))}</b></td><td class="num"><b>${money(Object.values(t).reduce((s, v) => s + v, 0)*12)}</b></td></tr></tbody></table>`; };
-OUT.csChart = R => chart([{name:'CS FTE needed', vals:R.csReq, color:'var(--amber-line)'}, {name:'CS FTE planned', vals:R.csPlan, color:'var(--blue)'}], {fmt:v => v.toFixed(1), label:'Customer Success FTE needed vs planned', marks:marks(R), h:230});
+OUT.csChart = R => chart([{name:'CS FTE needed', vals:R.csReq, color:'var(--amber-line)'}, {name:'CS FTE planned', vals:R.csPlan, color:'var(--btn)'}], {fmt:v => v.toFixed(1), label:'Customer Success FTE needed vs planned', marks:marks(R), h:230});
 OUT.csToday = () => state.spend.filter(l => l.bucket === 'Customer success').reduce((t, l) => t + num(l.hc), 0).toFixed(1);
 OUT.capSummary = R => { const short = (need, have) => { for (let i = 0; i < R.H; i++) if (have[i] + 0.05 < need[i]) return i; return -1; };
   const cs = short(R.csReq, R.csPlan), sl = short(R.sellReq, R.sellPlan);
@@ -502,10 +503,10 @@ function refresh(){
     [money(R.arr[last]), `ARR at M${H}, ${R.fam[last].toFixed(0)} families`],
     [money(R.arr[0]/12) + ' vs ' + money(R.spend[0]), 'Run rate vs monthly spend today']
   ].map(([v, l]) => `<div class="stat"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
-  document.getElementById('ch-cash').innerHTML = chart([{name:'Cash balance', vals:R.cash, color:'var(--blue)'}, {name:'ARR', vals:R.arr.slice(0, H), color:'var(--greenl)', dash:true}], {fmt:money, label:'Cash balance and ARR by month', marks:marks(R)});
-  document.getElementById('ch-flow').innerHTML = chart([{name:'Net cash', vals:R.net, color:'var(--greenl)', neg:'var(--red)', type:'bar'}, {name:'Collections', vals:R.coll.slice(0, H), color:'var(--blue)'}, {name:'Spend', vals:R.spend, color:'var(--amber-line)'}], {fmt:money, label:'Monthly collections, spend and net cash', h:240});
+  document.getElementById('ch-cash').innerHTML = chart([{name:'Cash balance', vals:R.cash, color:'var(--btn)'}, {name:'ARR', vals:R.arr.slice(0, H), color:'var(--greenl)', dash:true}], {fmt:money, label:'Cash balance and ARR by month', marks:marks(R)});
+  document.getElementById('ch-flow').innerHTML = chart([{name:'Net cash', vals:R.net, color:'var(--greenl)', neg:'var(--red)', type:'bar'}, {name:'Collections', vals:R.coll.slice(0, H), color:'var(--btn)'}, {name:'Spend', vals:R.spend, color:'var(--amber-line)'}], {fmt:money, label:'Monthly collections, spend and net cash', h:240});
   const sustain = R.spend.map((s, i) => { const apf = R.fam[i] > 0 ? R.arr[i]/R.fam[i] : R.per[0]; return apf > 0 ? s/(apf/12) : 0; });
-  document.getElementById('ch-fam').innerHTML = chart([{name:'Families on the platform', vals:R.fam.slice(0, H), color:'var(--blue)'}, {name:'Sustain target', vals:sustain, color:'var(--muted)', dash:true}], {fmt:v => v.toFixed(0), label:'Families on the platform with the sustain target', marks:marks(R)});
+  document.getElementById('ch-fam').innerHTML = chart([{name:'Families on the platform', vals:R.fam.slice(0, H), color:'var(--btn)'}, {name:'Sustain target', vals:sustain, color:'var(--muted)', dash:true}], {fmt:v => v.toFixed(0), label:'Families on the platform with the sustain target', marks:marks(R)});
   document.querySelectorAll('output[data-for]').forEach(o => { o.textContent = FMT[o.dataset.fmt](getPath(o.dataset.for)); });
   document.querySelectorAll('[data-out]').forEach(el => { const f = OUT[el.dataset.out]; if (f) el.innerHTML = f(R); });
   document.querySelectorAll('#presets button[data-preset]').forEach(b => b.classList.toggle('active', b.dataset.preset === state.preset));
