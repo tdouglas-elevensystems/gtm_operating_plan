@@ -132,11 +132,25 @@ dialog textarea{width:100%;height:260px;font:12px/1.4 Arial,Helvetica,sans-serif
 .capcol .hint{margin:6px 0 8px}
 .statgrid label{min-width:0}.statgrid input{width:100%;min-width:0}
 details.chartblock summary{cursor:pointer;font-size:15.5px;list-style-position:inside}
+.dot{display:inline-block;width:13px;height:13px;border-radius:50%;vertical-align:middle}
+.dot.g{background:var(--green)}.dot.a{background:var(--amber)}.dot.r{background:var(--red)}
+.dash td{vertical-align:top}
+.dash td.cur input{width:110px;text-align:right;padding:3px 6px}
+.dash tr.sechd td{background:transparent!important;color:var(--blue);font-weight:700;font-size:13px;padding-top:16px;border-bottom:1px solid var(--th)}
+.dash td.note{color:var(--muted);font-size:12.5px;min-width:260px;max-width:420px;white-space:normal}
+.dash td.bm{font-size:12.5px;min-width:180px;white-space:normal}
+.dash td.mname{font-weight:700;white-space:nowrap}
+.dash td.drv{font-style:italic}
+.tna{color:var(--muted);font-size:12px}
+.keyrow{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin:6px 0 12px;align-items:center}
+.teamtab td input{width:96px;text-align:right;padding:3px 6px}
+.ctlrow{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:12px;font-size:13px}
+.ctlrow select,.ctlrow input{width:auto}
 </style>
 </head>
 <body>
 <header class="top">
-  <div><h1>Eleven | GTM operating model</h1><p class="sub">M1 = Nov 2026. Annual prepay. Spend steps up on milestones. Prepared by Tim Douglas.</p></div>
+  <div><h1>Eleven | GTM operating model</h1><p class="sub">M1 = Jan 2027, when the strategic round closes. 48 months to Dec 2030. Hires and spend step up on milestones. Prepared by Tim Douglas.</p></div>
   <div class="presets" role="group" aria-label="Scenario presets" id="presets"></div>
 </header>
 <div class="layout">
@@ -149,148 +163,154 @@ details.chartblock summary{cursor:pointer;font-size:15.5px;list-style-position:i
   <textarea id="copyText" readonly></textarea>
   <div class="btns"><button id="copyClose">Close</button></div>
 </dialog>
+<dialog id="confirmDlg">
+  <p id="confirmText" style="margin-top:0"></p>
+  <div class="btns"><button id="confirmYes">Yes</button><button class="ghost" id="confirmNo">Cancel</button></div>
+</dialog>
 <input type="file" id="restoreFile" accept=".json,application/json" hidden>
 <script>
 /* ===== price book (Playbk), reference only ===== */
 const MODS = ['property','financial','family'];
 const MOD = {
-  property:  { label:'Property',  unit:'properties',     tiers:[[3,15000],[5,30000],[10,45000],[20,60000],[Infinity,80000]] },
-  financial: { label:'Financial', unit:'entities',       tiers:[[50,25000],[100,40000],[200,70000],[400,100000],[Infinity,140000]] },
-  family:    { label:'Family',    unit:'trusts',         tiers:[[5,15000],[10,25000],[Infinity,40000]] }
+  property:  { label:'Property',  unit:'properties', tiers:[[3,15000],[5,30000],[10,45000],[20,60000],[Infinity,80000]] },
+  financial: { label:'Financial', unit:'entities',   tiers:[[50,25000],[100,40000],[200,70000],[400,100000],[Infinity,140000]] },
+  family:    { label:'Family',    unit:'trusts',     tiers:[[5,15000],[10,25000],[Infinity,40000]] }
 };
-function tierOf(m, v){ const n = Math.max(1, Math.round(v)); const t = MOD[m].tiers; for (let i = 0; i < t.length; i++) if (n <= t[i][0]) return {tier:i+1, price:t[i][1]}; return {tier:5, price:t[4][1]}; }
-const BUCKETS = ['COGS','Customer success','R&D','Sales & marketing','G&A'];
-const BK = {'COGS':'cogs','Customer success':'cs','R&D':'rd','Sales & marketing':'sm','G&A':'ga'};
-const STATUSES = ['Workbook estimate','Check overlap','Confirmed','Needs input'];
+function tierOf(m, v){ const n = Math.max(1, Math.round(v)); const t = MOD[m].tiers; for (let i = 0; i < t.length; i++) if (n <= t[i][0]) return {tier:i+1, price:t[i][1]}; return {tier:t.length, price:t[t.length-1][1]}; }
 
+/* ===== scenarios and starting values (GTM Stack and Cash Path workbook, Nov 2026) ===== */
 const PRESETS = {
-  cons: { label:'Conservative', target:2,    ramp:{on:true, r1:0.5,  r2:1,    m2:6, m3:12}, blend:50000, renew:90 },
-  real: { label:'Realistic',    target:3,    ramp:{on:true, r1:1,    r2:2,    m2:6, m3:12},  blend:60000, renew:95 },
-  up:   { label:'Upside',       target:4,    ramp:{on:true, r1:1.5,  r2:3,    m2:6, m3:12},  blend:70000, renew:97 }
+  cons: { label:'Conservative', blend:50000, renew:90, r1:0.5, r2:1, r3:2 },
+  real: { label:'Realistic',    blend:60000, renew:95, r1:1,   r2:2, r3:3 },
+  up:   { label:'Upside',       blend:70000, renew:97, r1:1.5, r2:3, r3:4 }
 };
+const FNS = ['Leadership','Customer success','Marketing','Sales and channels'];
+const TEAM = ['CRO','Fractional leads','Head of CS, full time','CSMs','Marketers','AEs','SDR and partner manager'];
+const ROLES = [
+  {id:'cro',  fn:'Leadership', team:'CRO', name:'CRO base, sales and marketing share', monthly:26833, trig:{k:'always'}, note:'Two-thirds of $35K base plus 15% ($40,250 a month in all). Replaces today’s $25K retainer.'},
+  {id:'crocs', fn:'Customer success', name:'CRO base, Customer Success share', monthly:13417, trig:{k:'always'}, note:'One-third of the CRO base: the CRO also runs CS. Same cash, reported where the work is.'},
+  {id:'crov', fn:'Leadership', name:'CRO variable at plan', monthly:15000, trig:{k:'always'}, note:'$180K a year, earned on new ARR.'},
+  {id:'cs0',  fn:'Customer success', name:'Existing CS team (Rayna, Cristina, Gabby)', monthly:26642, trig:{k:'always'}, note:'Today’s CS run rate. Confirm against actuals.'},
+  {id:'hcsf', fn:'Customer success', team:'Fractional leads', name:'Head of CS, fractional', monthly:12000, trig:{k:'famLt', x:50}},
+  {id:'hcs',  fn:'Customer success', team:'Head of CS, full time', name:'Head of CS, full time', monthly:22000, trig:{k:'famGe', x:50}},
+  {id:'csm',  fn:'Customer success', team:'CSMs', name:'CSMs', monthly:13000, trig:{k:'perFam', x:20, per:20}, note:'Current team covers the first 20 families.'},
+  {id:'mf',   fn:'Marketing', team:'Fractional leads', name:'Fractional marketing', monthly:10000, trig:{k:'arrLt', x:1500000}, note:'Placeholder fee. Confirm.'},
+  {id:'mk1',  fn:'Marketing', team:'Marketers', name:'Full-time marketer', monthly:16000, trig:{k:'arrGe', x:1500000}},
+  {id:'mk2',  fn:'Marketing', team:'Marketers', name:'Second marketer (demand gen)', monthly:14000, trig:{k:'arrGe', x:4000000}},
+  {id:'prog', fn:'Marketing', name:'Programs and events', trig:{k:'pctNew', x:10}},
+  {id:'s0',   fn:'Sales and channels', name:'Existing sales, marketing and tools', monthly:39312, trig:{k:'always'}, note:'Today’s S&M run rate less the CRO retainer and fractional marketing.'},
+  {id:'ae1',  fn:'Sales and channels', team:'AEs', name:'Founding AE', monthly:26000, trig:{k:'signRun', x:2, run:2}},
+  {id:'ae2',  fn:'Sales and channels', team:'AEs', name:'AE 2', monthly:26000, trig:{k:'signRun', x:3, run:6, after:'ae1'}, note:'Now after 6 months at 3 a month (was 1 month): partners and the CRO prove the pace first.'},
+  {id:'ae3',  fn:'Sales and channels', team:'AEs', name:'AE 3', monthly:26000, trig:{k:'afterRole', after:'ae2', lag:3}},
+  {id:'sdr',  fn:'Sales and channels', team:'SDR and partner manager', name:'SDR', monthly:9000, trig:{k:'afterRole', after:'ae3', lag:0}},
+  {id:'pm',   fn:'Sales and channels', team:'SDR and partner manager', name:'Partner manager', monthly:18000, trig:{k:'fromMonth', x:13}, note:'Moved from month 9 to month 13. Placeholder for 5 active referral partners.'},
+  {id:'ref',  fn:'Sales and channels', name:'Partner referral fees', trig:{k:'referral'}}
+];
+const CUR = { asOf:'Nov 2026', fam:1, arr:56000, sign:'', win:'', cycle:'', cover:'', partnerShare:100, partners:'', grr:'', golive:'', netNew:56000, cash:'',
+  lead:25000, cs:26642, mkt:10000, sales:39312, rd:149966, cogs:23062, ga:37733 };
+const TGT = { win:25, cycle:3, cover:3, partners:5 };
 const DEFAULT = {
-  version:3, preset:'real', startMonth:'2026-11', horizon:36, cash:7500000,
-  raises:[ {id:'t1', name:'Seed extension', amt:1000000, mo:4}, {id:'t2', name:'Series A', amt:0, mo:24} ],
-  existing:[ {id:'e1', name:'Rafferty Holdings', arr:56000, renew:'2027-10'} ],
-  eng:{ target:3, ramp:{on:true, r1:1, r2:2, m2:6, m3:12}, blend:60000, uplift:0, renew:95, credit:2, implPct:20, cac:2000 },
-  opex:{ today:{cogs:23062, cs:26642, rd:149966, sm:74312, ga:37733}, raise:{cogs:0, cs:12000, rd:0, sm:26000, ga:0}, fam:{cogs:2000, cs:13000, rd:0, sm:54000, ga:3000}, n:6 },
-  pf:{ financial:98, property:3, family:12, disc:20 }, pfTrusts:true, rampV2:true, rampV3:true, costsWB:true, spendLines:true, cash75:true,
-  spend:[
-    {id:'s1', bucket:'COGS', name:'Hosting and infrastructure', hc:0, monthly:14529, status:'Workbook estimate'},
-    {id:'s2', bucket:'COGS', name:'Third-party data feeds (Yodlee, EODHD)', hc:0, monthly:1250, status:'Workbook estimate'},
-    {id:'s3', bucket:'COGS', name:'Customer support', hc:1, monthly:7283, status:'Workbook estimate'},
-    {id:'s4', bucket:'Customer success', name:'VP Customer Success', hc:1, monthly:17442, status:'Check overlap'},
-    {id:'s5', bucket:'Customer success', name:'Customer success associate', hc:1, monthly:9200, status:'Workbook estimate'},
-    {id:'s6', bucket:'R&D', name:'Engineering team', hc:0, monthly:95000, status:'Workbook estimate'},
-    {id:'s7', bucket:'R&D', name:'Product management and support', hc:0, monthly:39333, status:'Check overlap'},
-    {id:'s8', bucket:'R&D', name:'UI/UX designer', hc:1, monthly:11775, status:'Workbook estimate'},
-    {id:'s9', bucket:'R&D', name:'Dev tools and embedded libraries', hc:0, monthly:3858, status:'Workbook estimate'},
-    {id:'s10', bucket:'Sales & marketing', name:'VP Sales', hc:1, monthly:14375, status:'Check overlap'},
-    {id:'s11', bucket:'Sales & marketing', name:'Inside sales rep', hc:1, monthly:7188, status:'Workbook estimate'},
-    {id:'s12', bucket:'Sales & marketing', name:'Marketing manager', hc:1, monthly:13417, status:'Check overlap'},
-    {id:'s13', bucket:'Sales & marketing', name:'Travel and expenses', hc:0, monthly:5000, status:'Workbook estimate'},
-    {id:'s14', bucket:'Sales & marketing', name:'Marketing programs', hc:0, monthly:8333, status:'Workbook estimate'},
-    {id:'s15', bucket:'Sales & marketing', name:'Current GTM fractional and tools (not in workbook)', hc:1.5, monthly:26000, status:'Confirmed'},
-    {id:'s16', bucket:'G&A', name:'Controller', hc:1, monthly:10000, status:'Workbook estimate'},
-    {id:'s17', bucket:'G&A', name:'Bookkeeper', hc:1, monthly:7083, status:'Workbook estimate'},
-    {id:'s18', bucket:'G&A', name:'Executive assistant', hc:1, monthly:11500, status:'Workbook estimate'},
-    {id:'s19', bucket:'G&A', name:'Security and compliance (SOC 2, pen test, HIPAA, PCI)', hc:0, monthly:9150, status:'Workbook estimate'}
-  ],
-  cap:{ onboardHrs:80, agentOn:true, agentCut:40, ongoingHrs:10, csHrs:130, csRaise:0.5, csFam:1, quota:600000, founder:0.5, sellToday:1, sellFam:1 },
+  version:4, preset:'real', startMonth:'2027-01', horizon:48,
+  sc: Object.assign({}, PRESETS.real, {label:undefined}),
+  inp: { expand:12, round:10000000, roundMo:1, otherCash:0, fam0:5, m2:7, m3:13, credit:2, implPct:20, implSign:50, golive:2, refShare:50, refFee:12.5, rd:149966, cogs:23062, ga:37733 },
+  roles: JSON.parse(JSON.stringify(ROLES)),
+  cur: Object.assign({}, CUR), tgt: Object.assign({}, TGT), checkpoint:11,
+  pf:{ financial:98, property:3, family:12, disc:20 },
   baseline:null, actuals:{}
 };
+delete DEFAULT.sc.label; DEFAULT.v41 = true;
 const clone = o => JSON.parse(JSON.stringify(o));
 function migrate(s){
   const d = clone(DEFAULT); if (!s || typeof s !== 'object') return d;
-  if (s.version === 3){ const o = Object.assign(d, s);
-    o.eng = Object.assign(clone(DEFAULT.eng), s.eng || {}); o.eng.ramp = Object.assign(clone(DEFAULT.eng.ramp), (s.eng || {}).ramp || {});
-    o.opex = Object.assign(clone(DEFAULT.opex), s.opex || {}); ['today','raise','fam'].forEach(k => o.opex[k] = Object.assign(clone(DEFAULT.opex[k]), (s.opex || {})[k] || {}));
-    o.pf = Object.assign(clone(DEFAULT.pf), s.pf || {}); if (!s.pfTrusts){ o.pf = clone(DEFAULT.pf); o.pfTrusts = true; }
-    if (!s.rampV2){ o.eng.target = DEFAULT.eng.target; o.eng.ramp = clone(DEFAULT.eng.ramp); o.preset = 'real'; o.rampV2 = true; }
-    if (!s.rampV3){ o.eng.target = DEFAULT.eng.target; o.eng.ramp = clone(DEFAULT.eng.ramp); o.preset = 'real'; o.rampV3 = true; }
-    if (!s.costsWB){ o.opex.today = clone(DEFAULT.opex.today); o.costsWB = true; }
-    if (!s.spendLines || !Array.isArray(s.spend)){ o.spend = clone(DEFAULT.spend); o.spendLines = true; }
-    o.cap = Object.assign(clone(DEFAULT.cap), s.cap || {});
-    if (!s.cash75){ if (!num(s.cash)) o.cash = DEFAULT.cash; o.cash75 = true; } o.actuals = s.actuals || {}; return o; }
-  /* from the detailed version: keep what carries over, park the rest */
-  if (s.version === 2){
-    if (s.cash) d.cash = s.cash;
-    if (Array.isArray(s.existing)) d.existing = s.existing;
-    if (Array.isArray(s.raises) && s.raises.some(t => Number(t.amt))) d.raises = s.raises.map(t => ({id:t.id, name:t.name, amt:Number(t.amt) || 0, mo:/^\d+$/.test(String(t.when)) ? Number(t.when) : 24}));
-    if (Array.isArray(s.spend)){ const t = {cogs:0, cs:0, rd:0, sm:0, ga:0}; s.spend.forEach(l => { const k = BK[l.bucket]; if (k) t[k] += Number(l.monthly) || 0; }); d.opex.today = t; }
-    if (s.pf) d.pf = Object.assign(d.pf, s.pf);
-    if (s.baseline) d.baseline = s.baseline; if (s.actuals) d.actuals = s.actuals;
-    d.parkedDetailed = s;
-  }
-  return d;
+  if (s.version !== 4){ if (s.pf) d.pf = Object.assign(d.pf, s.pf); d.parkedV3 = s; return d; }
+  const o = Object.assign(d, s);
+  o.sc = Object.assign(clone(DEFAULT.sc), s.sc || {}); o.inp = Object.assign(clone(DEFAULT.inp), s.inp || {});
+  o.cur = Object.assign(clone(DEFAULT.cur), s.cur || {}); o.tgt = Object.assign(clone(DEFAULT.tgt), s.tgt || {});
+  if (!Array.isArray(s.roles) || !s.v41){ o.roles = clone(ROLES); o.v41 = true; }
+  o.actuals = s.actuals || {}; return o;
 }
 let state = clone(DEFAULT);
-try { const s = localStorage.getItem('eleven-gtm-model-v3') || localStorage.getItem('eleven-gtm-model-v2'); if (s) state = migrate(JSON.parse(s)); } catch (e) {}
+try { const s = localStorage.getItem('eleven-gtm-model-v4'); if (s) state = migrate(JSON.parse(s)); } catch (e) {}
 
 /* ===== helpers ===== */
-let uid = 1; const nid = p => p + Date.now().toString(36) + (uid++);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = v => { const n = parseFloat(v); return isFinite(n) ? n : 0; };
-function money(v){ const a = Math.abs(v); const s = a >= 1e6 ? '$' + (a/1e6).toFixed(a >= 1e7 ? 1 : 2) + 'M' : a >= 1e4 ? '$' + Math.round(a/1e3) + 'K' : '$' + Math.round(a).toLocaleString('en-US'); return (v < 0 ? '-' : '') + s; }
-const full = v => (v < 0 ? '-' : '') + '$' + Math.round(Math.abs(v)).toLocaleString('en-US');
-function parseAmt(str){ const t = String(str).trim().toUpperCase().replace(/[$,\s]/g, ''); const m = t.match(/^(-?\d*\.?\d+)([KM]?)$/); if (!m) return null; return Math.round(parseFloat(m[1]) * (m[2] === 'M' ? 1e6 : m[2] === 'K' ? 1e3 : 1)); }
+const blank = v => v === '' || v === null || v === undefined || (typeof v === 'number' && !isFinite(v));
+function money(v){ const a = Math.abs(v); const s = a >= 1e6 ? '$' + (a/1e6).toFixed(a >= 1e7 ? 1 : 2) + 'M' : a >= 1e4 ? '$' + Math.round(a/1e3) + 'K' : '$' + Math.round(a).toLocaleString('en-US'); return (v < 0 ? '(' : '') + s + (v < 0 ? ')' : ''); }
+const full = v => (v < 0 ? '(' : '') + '$' + Math.round(Math.abs(v)).toLocaleString('en-US') + (v < 0 ? ')' : '');
+function parseAmt(str){ const t = String(str).trim().toUpperCase().replace(/[$,\s()]/g, ''); if (t === '') return ''; const m = t.match(/^(-?\d*\.?\d+)([KM]?)$/); if (!m) return null; return Math.round(parseFloat(m[1]) * (m[2] === 'M' ? 1e6 : m[2] === 'K' ? 1e3 : 1)); }
 const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function ymOf(i){ const [y0,m0] = state.startMonth.split('-').map(Number); const t = (m0-1) + i; return [y0 + Math.floor(t/12), ((t%12)+12)%12]; }
 const mLabel = i => { const [y,m] = ymOf(i); return MN[m] + ' ' + String(y).slice(2); };
 const mLong = i => { const [y,m] = ymOf(i); return MN[m] + ' ' + y; };
 const mISO = i => { const [y,m] = ymOf(i); return y + '-' + String(m+1).padStart(2,'0'); };
 const mName = i => 'M' + (i+1) + ', ' + mLong(i);
-function mIdx(ym){ if (!ym) return Infinity; const [y,m] = ym.split('-').map(Number); const [y0,m0] = state.startMonth.split('-').map(Number); return (y-y0)*12 + (m-m0); }
+const sum = (a, f = 0, t = a.length - 1) => { let s = 0; for (let i = f; i <= t; i++) s += a[i] || 0; return s; };
 
-/* ===== engine ===== */
-function spendToday(){ const t = {}; BUCKETS.forEach(b => t[b] = 0); state.spend.forEach(l => { if (t[l.bucket] !== undefined) t[l.bucket] += num(l.monthly); }); return t; }
-function model(){
-  const e = state.eng, H = state.horizon, H2 = H + 12;
-  const up = num(e.uplift)/100, renew = num(e.renew)/100, pct = num(e.implPct)/100, credit = Math.min(12, num(e.credit));
-  /* pricing basis: one blended ARR per customer, stepping up by the uplift at each anniversary */
-  const list = [], per = [];
-  for (let t = 0; t < H2; t++){ const yrs = Math.floor(t/12); per.push(num(e.blend) * Math.pow(1 + up, yrs) * Math.pow(renew, yrs)); list.push(per[t]); }
-  const sign = []; for (let i = 0; i < H2; i++){ const M = i + 1, r = e.ramp; sign.push(!r.on ? num(e.target) : M >= r.m3 ? num(e.target) : M >= r.m2 ? num(r.r2) : num(r.r1)); }
-  const fam = [], arr = [], coll = [], impl = [];
-  for (let i = 0; i < H2; i++){
-    let f = 0, a = 0, c = 0, im = 0;
-    for (let m = 0; m <= i; m++){ const n = sign[m]; if (!n) continue; const age = i - m;
-      f += n * Math.pow(renew, Math.floor(age/12)); a += n * per[age];
-      if (age === 0){ c += n * per[0] * (1 - credit/12); im += n * pct * list[0]; }
-      else { c += n * (age % 12 === 0 ? per[age] : Math.max(0, per[age] - per[age-1]) * (12 - age % 12)/12); im += n * pct * Math.max(0, list[age] - list[age-1]); } }
-    state.existing.forEach(x => { const r = mIdx(x.renew); const passed = i >= r ? Math.floor((i - r)/12) + 1 : 0; const sv = Math.pow(renew, passed);
-      f += sv; a += num(x.arr) * sv; if (i >= r && (i - r) % 12 === 0) c += num(x.arr) * sv; });
-    fam.push(f); arr.push(a); coll.push(c + im); impl.push(im);
+/* ===== engine: mirrors the Monthly sheets of the GTM Stack and Cash Path workbook ===== */
+function run(scIn){
+  const sc = scIn || state.sc, I = state.inp, H = state.horizon, ren = num(sc.renew)/100, B = num(sc.blend), ex = 1 + num(I.expand)/100, q = 1 - (1 - ren)/12;
+  const z = () => new Array(H).fill(0);
+  const sign = z(), fam = z(), arr = z(), newArr = z(), impl = z(), coll = z(), rev = z(), yr = z();
+  for (let i = 0; i < H; i++){ const M = i + 1; sign[i] = M < num(I.m2) ? num(sc.r1) : M < num(I.m3) ? num(sc.r2) : num(sc.r3);
+    fam[i] = (i ? fam[i-1] : num(I.fam0)) * q + sign[i]; newArr[i] = sign[i]*B; yr[i] = Math.floor(i/12); }
+  /* ARR by cohort: each family's ARR grows by the expansion rate at each anniversary */
+  for (let i = 0; i < H; i++){ let a = num(I.fam0)*Math.pow(q, i + 1)*B*Math.pow(ex, yr[i]);
+    for (let m = 0; m <= i; m++) a += sign[m]*Math.pow(q, i - m)*B*Math.pow(ex, Math.floor((i - m)/12)); arr[i] = a; }
+  const pct = num(I.implPct)/100, atS = num(I.implSign)/100, lag = Math.round(num(I.golive)), credit = num(I.credit);
+  for (let i = 0; i < H; i++){
+    impl[i] = newArr[i]*pct*atS + (i >= lag ? newArr[i-lag]*pct*(1 - atS) : 0);
+    let renew = 0; for (let k = 1; i - 12*k >= 0; k++) renew += sign[i-12*k]*B*Math.pow(ren*ex, k);
+    const today = num(I.fam0)*B/12*Math.pow(ren*ex, yr[i]);
+    coll[i] = newArr[i]*(1 - credit/12) + impl[i] + renew + today;
+    rev[i] = arr[i]/12 + impl[i];
   }
-  /* opex steps on milestones */
-  const funded = state.raises.filter(t => num(t.amt) > 0).map(t => num(t.mo) - 1);
-  const step2 = funded.length ? Math.max(0, Math.min(...funded)) : Infinity;
-  let step3 = Infinity; for (let i = 1; i < H; i++) if (fam[i-1] >= num(state.opex.n) - 1e-9){ step3 = Math.max(i, step2 === Infinity ? i : i); break; }
-  const z = () => new Array(H).fill(0); const byB = {}; BUCKETS.forEach(b => byB[b] = z());
-  const o = state.opex, todayB = spendToday();
-  for (let i = 0; i < H; i++) BUCKETS.forEach(b => { const k = BK[b]; byB[b][i] = todayB[b] + (i >= step2 ? num(o.raise[k]) : 0) + (i >= step3 ? num(o.fam[k]) : 0); });
-  for (let i = 0; i < H; i++) byB['Sales & marketing'][i] += sign[i] * num(e.cac);
-  const spend = z().map((_, i) => BUCKETS.reduce((s, b) => s + byB[b][i], 0));
-  const raise = z(); state.raises.forEach(t => { const i = num(t.mo) - 1; if (i >= 0 && i < H) raise[i] += num(t.amt); });
-  const net = [], cash = [], cum = []; let bal = num(state.cash), c2 = 0;
-  for (let i = 0; i < H; i++){ const n = coll[i] - spend[i]; net.push(n); c2 += n; cum.push(c2); bal += n + raise[i]; cash.push(bal); }
-  let payg = -1; for (let i = 0; i < H; i++){ if (net[i] >= 0 && net.slice(i).every(v => v >= 0)){ payg = i; break; } }
-  let trough = 0; for (let i = 1; i < H; i++) if (cum[i] < cum[trough]) trough = i;
+  /* GTM roles fire on milestones */
+  const rc = {}, rn = {}, start = {};
+  state.roles.forEach(r => {
+    const t = r.trig, c = z(), n = z(); let s0 = Infinity;
+    if (t.k === 'signRun'){ for (let i = Math.max(1, num(t.run)); i < H; i++){ let ok = true; for (let j = 1; j <= num(t.run); j++) if (sign[i-j] < num(t.x)) ok = false;
+        if (t.after && !(rn[t.after] && rn[t.after][i-1] > 0)) ok = false; if (ok){ s0 = i; break; } } }
+    if (t.k === 'afterRole') s0 = (start[t.after] ?? Infinity) + num(t.lag);
+    if (t.k === 'fromMonth') s0 = num(t.x) - 1;
+    for (let i = 0; i < H; i++){ let k = 0;
+      switch (t.k){
+        case 'always': k = 1; break;
+        case 'famLt': k = fam[i] < num(t.x) ? 1 : 0; break;
+        case 'famGe': k = fam[i] >= num(t.x) ? 1 : 0; break;
+        case 'arrLt': k = arr[i] < num(t.x) ? 1 : 0; break;
+        case 'arrGe': k = arr[i] >= num(t.x) ? 1 : 0; break;
+        case 'perFam': k = Math.ceil(Math.max(0, fam[i] - num(t.x))/Math.max(1, num(t.per)) - 1e-9); break;
+        case 'signRun': case 'afterRole': case 'fromMonth': k = i >= s0 ? 1 : 0; break;
+      }
+      n[i] = k;
+      c[i] = t.k === 'pctNew' ? newArr[i]*num(t.x)/100 : t.k === 'referral' ? newArr[i]*num(I.refShare)/100*num(I.refFee)/100 : k*num(r.monthly);
+      if (k > 0 && start[r.id] === undefined) start[r.id] = i;
+    }
+    if (start[r.id] === undefined && (t.k === 'pctNew' || t.k === 'referral')) start[r.id] = 0;
+    rc[r.id] = c; rn[r.id] = n;
+  });
+  const byFn = {}; FNS.forEach(f => byFn[f] = z());
+  state.roles.forEach(r => rc[r.id].forEach((v, i) => byFn[r.fn][i] += v));
+  const rd = z().fill(num(I.rd)), cogs = z().fill(num(I.cogs)), ga = z().fill(num(I.ga));
+  const product = rd.map((v, i) => v + cogs[i]);
+  const gtm = z().map((_, i) => FNS.reduce((s, f) => s + byFn[f][i], 0));
+  const spend = z().map((_, i) => gtm[i] + product[i] + ga[i]);
+  const raise = z(); const rm = Math.round(num(I.roundMo)) - 1; if (rm >= 0 && rm < H) raise[rm] = num(I.round);
+  const net = z(), cash = z(); let bal = num(I.otherCash);
+  for (let i = 0; i < H; i++){ net[i] = coll[i] - spend[i]; bal += net[i] + raise[i]; cash[i] = bal; }
+  let payg = -1; for (let i = 0; i < H; i++){ if (net.slice(i).every(v => v >= 0)){ payg = i; break; } }
   let low = 0; for (let i = 1; i < H; i++) if (cash[i] < cash[low]) low = i;
   let out = -1; for (let i = 0; i < H; i++) if (cash[i] < 0){ out = i; break; }
-  const ca = state.cap, csToday = state.spend.filter(l => l.bucket === 'Customer success').reduce((t, l) => t + num(l.hc), 0);
-  const csReq = z().map((_, i) => (sign[i] * num(ca.onboardHrs) * (ca.agentOn ? 1 - num(ca.agentCut)/100 : 1) + fam[i] * num(ca.ongoingHrs)) / Math.max(1, num(ca.csHrs)));
-  const csPlan = z().map((_, i) => csToday + (i >= step2 ? num(ca.csRaise) : 0) + (i >= step3 ? num(ca.csFam) : 0));
-  const sellReq = z().map((_, i) => { let s = 0; for (let j = i; j < i + 12; j++) s += sign[j] * per[0]; return s / Math.max(1, num(ca.quota)); });
-  const sellPlan = z().map((_, i) => num(ca.founder) + num(ca.sellToday) + (i >= step3 ? num(ca.sellFam) : 0));
-  return {H, sign, fam, arr, coll, impl, list, per, byB, spend, raise, net, cash, cum, payg, bridge:Math.max(0, -cum[trough]), low, out, step2, step3, csReq, csPlan, sellReq, sellPlan};
+  return {H, B, ren, ex, sign, fam, arr, newArr, impl, coll, rev, rc, rn, start, byFn, rd, cogs, ga, product, gtm, spend, raise, net, cash, payg, low, out};
 }
+const years = R => { const out = []; for (let y = 0; y*12 < R.H; y++) out.push({y, label:String(ymOf(y*12)[0]), f:y*12, t:Math.min(R.H, y*12 + 12) - 1}); return out; };
 
 /* ===== persistence ===== */
 let dbRef = null, writing = false, pending = false, saveTimer = null, dirty = false;
 function setSave(t){ const el = document.getElementById('saveNote'); if (el) el.textContent = t; }
 function scheduleSave(){
-  dirty = true; try { localStorage.setItem('eleven-gtm-model-v3', JSON.stringify(state)); } catch (e) {}
+  dirty = true; try { localStorage.setItem('eleven-gtm-model-v4', JSON.stringify(state)); } catch (e) {}
   if (!dbRef){ setSave('Saved on this device'); return; }
   setSave('Saving…'); clearTimeout(saveTimer); saveTimer = setTimeout(flush, 800);
 }
@@ -301,7 +321,7 @@ async function flush(){ if (!dbRef) return; if (writing){ pending = true; return
   if (!window.claude || typeof window.claude.use !== 'function') return;
   try { const db = await window.claude.use('db'); if (!db) return; const ref = db.doc('plan/current');
     const snap = await Promise.race([ref.get(), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000))]); dbRef = ref;
-    if (snap.exists && !dirty){ state = migrate(snap.data()); renderAll(); setSave('Saved'); if (snap.data().version !== 3) flush(); }
+    if (snap.exists && !dirty){ state = migrate(snap.data()); renderAll(); setSave('Saved'); if (snap.data().version !== 4) flush(); }
     else if (dirty) flush(); else setSave('Saved');
   } catch (e) { setSave('Saved on this device'); }
 })();
@@ -311,8 +331,12 @@ async function offerFile(filename, text){
   document.getElementById('copyTitle').textContent = filename; document.getElementById('copyText').value = text; document.getElementById('copyDlg').showModal();
 }
 document.getElementById('copyClose').onclick = () => document.getElementById('copyDlg').close();
+let confirmCb = null;
+function ask(text, cb){ confirmCb = cb; document.getElementById('confirmText').textContent = text; document.getElementById('confirmDlg').showModal(); }
+document.getElementById('confirmYes').onclick = () => { document.getElementById('confirmDlg').close(); const f = confirmCb; confirmCb = null; if (f) f(); };
+document.getElementById('confirmNo').onclick = () => { document.getElementById('confirmDlg').close(); confirmCb = null; };
 
-/* ===== chart with annual milestone callouts ===== */
+/* ===== chart ===== */
 function chart(series, opts){
   const W = 860, H = opts.h || 280, L = 64, R = 12, T = 14, B = 28; const n = series[0].vals.length;
   const all = series.flatMap(s => s.vals); let lo = Math.min(0, ...all), hi = Math.max(1, ...all); const pad = (hi - lo) * 0.1; hi += pad; if (lo < 0) lo -= pad;
@@ -320,7 +344,7 @@ function chart(series, opts){
   let g = '<g class="grid">';
   for (let k = 0; k <= 4; k++){ const v = lo + (hi - lo)*k/4; g += `<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end">${opts.fmt(v)}</text>`; }
   g += '</g>';
-  for (let i = 0; i < n; i += 3) g += `<text x="${x(i)}" y="${H-9}" text-anchor="middle">${mLabel(i)}</text>`;
+  for (let i = 0; i < n; i += 6) g += `<text x="${x(i)}" y="${H-9}" text-anchor="middle">${mLabel(i)}</text>`;
   if (lo < 0) g += `<line x1="${L}" x2="${W-R}" y1="${y(0)}" y2="${y(0)}" stroke="var(--muted)"/>`;
   series.filter(s => s.type === 'bar').forEach(s => s.vals.forEach((v, i) => { const y0 = y(0), y1 = y(v);
     g += `<rect x="${x(i) - bw*0.36}" width="${bw*0.72}" y="${Math.min(y0, y1)}" height="${Math.max(1, Math.abs(y1 - y0))}" fill="${v >= 0 ? s.color : s.neg}" opacity=".85"/>`; }));
@@ -333,153 +357,281 @@ function chart(series, opts){
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opts.label)}">${g}</svg>
   <div class="legend">${series.map(s => `<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join('')}</div>`;
 }
-function januaries(R){ const out = []; for (let i = 12; i < R.H; i++) if (ymOf(i)[1] === 0) out.push(i); return out; }
-const marks = R => januaries(R).map(i => ({i, title:mLong(i), lines:['ARR ' + money(R.arr[i]), 'Families ' + R.fam[i].toFixed(1), 'Cash ' + money(R.cash[i])]}));
+const marks = R => [11, 23, 35, 47].filter(i => i < R.H).map(i => ({i, title:mLong(i), lines:['ARR ' + money(R.arr[i]), 'Families ' + R.fam[i].toFixed(0), 'Cash ' + money(R.cash[i])]}));
 
 /* ===== controls ===== */
-const FMT = { n2: v => (+num(v).toFixed(2)).toString(), pct: v => num(v) + '%', money: v => full(num(v)), mo: v => num(v) + (num(v) === 1 ? ' month' : ' months'), fam: v => (+num(v).toFixed(2)) + ' /mo' };
+const FMT = { pct: v => num(v) + '%', money: v => full(num(v)), mo: v => num(v) + (num(v) === 1 ? ' month' : ' months') };
 function getPath(p){ return p.split('.').reduce((o, k) => o == null ? o : o[k], state); }
 function setPath(p, val){ const ks = p.split('.'); let o = state; for (let i = 0; i < ks.length - 1; i++) o = o[ks[i]]; o[ks[ks.length - 1]] = val; }
 const slider = (p, label, min, max, step, fmt, hint) => `<div class="ctl"><div class="row"><label for="c-${p}">${label}</label><output data-for="${p}" data-fmt="${fmt}"></output></div>
   <input type="range" id="c-${p}" data-k="${p}" data-num min="${min}" max="${max}" step="${step}" value="${esc(getPath(p))}">${hint ? `<div class="hint">${hint}</div>` : ''}</div>`;
-const amt = (p, aria, extra = '') => `<input type="text" inputmode="numeric" data-k="${p}" data-amt aria-label="${esc(aria)}" value="${full(num(getPath(p)))}" ${extra}>`;
+const amt = (p, aria, extra = '') => { const v = getPath(p); return `<input type="text" inputmode="numeric" data-k="${p}" data-amt aria-label="${esc(aria)}" value="${blank(v) ? '' : full(num(v))}" ${extra}>`; };
 const inp = (p, val, type = 'number', extra = '') => `<input type="${type}" data-k="${p}" value="${esc(val)}" ${type === 'number' ? 'data-num inputmode="decimal"' : ''} ${extra}>`;
 const sel = (p, val, opts, extra = '') => `<select data-k="${p}" ${extra}>${opts.map(([v, l]) => `<option value="${esc(v)}" ${String(v) === String(val) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
 const monthOpts = (from = 1) => Array.from({length: state.horizon - from + 1}, (_, k) => [from + k, mName(from + k - 1)]);
-const opxIn = (step, k, label) => `<input type="text" inputmode="numeric" data-k="opex.${step}.${k}" data-amt data-k-short aria-label="${esc(label)}" value="${money(num(state.opex[step][k]))}" style="text-align:right;padding:4px 5px">`;
+const field = (p, label, hint, w = '120px') => `<div class="ctl"><div class="row"><label>${label}</label><span style="width:${w}">${inp(p, getPath(p), 'number', 'step="any" min="0" aria-label="' + esc(label) + '"')}</span></div>${hint ? `<div class="hint">${hint}</div>` : ''}</div>`;
+const fieldAmt = (p, label, hint) => `<div class="ctl"><div class="row"><label>${label}</label><span style="width:120px">${amt(p, label)}</span></div>${hint ? `<div class="hint">${hint}</div>` : ''}</div>`;
 
 function renderAside(){
-  const e = state.eng, o = state.opex;
+  const s = state.sc;
   document.getElementById('aside').innerHTML = `
   <h2>Capital</h2>
-  <div class="ctl"><label>Cash at start, ${mLong(0)}</label>${amt('cash', 'Cash at start')}<div class="hint">What is in the bank before any raise. Type 750K or 1.5M.</div></div>
-  ${state.raises.map((t, i) => `<div class="card"><div class="row"><input type="text" data-k="raises.${i}.name" value="${esc(t.name)}" aria-label="Raise name" style="font-weight:700;border:none;padding:0;background:transparent"><button class="x" data-act="del" data-list="raises" data-i="${i}" aria-label="Remove raise">×</button></div>
-    <div class="two" style="margin-top:6px">${amt(`raises.${i}.amt`, 'Raise amount')}${sel(`raises.${i}.mo`, t.mo, monthOpts(), 'aria-label="Month the raise lands"')}</div></div>`).join('')}
-  <button class="ghost" data-act="addRaise">Add raise</button>
-  <div class="hint">Placeholder amounts until terms are set. Each raise lands as a lump sum in its month.</div>
+  ${fieldAmt('inp.round', 'Strategic round', 'Draft basis: $10M. Type 10M or 7.5M.')}
+  <div class="ctl"><div class="row"><label>Round lands</label><span style="width:150px">${sel('inp.roundMo', state.inp.roundMo, monthOpts(), 'data-full aria-label="Month the round lands"')}</span></div></div>
+  ${fieldAmt('inp.otherCash', 'Other cash at start', 'Cash besides the round in January 2027. Confirm with Cristina.')}
 
-  <h2>Customers today</h2>
-  ${state.existing.map((x, i) => `<div class="card"><div class="row"><input type="text" data-k="existing.${i}.name" value="${esc(x.name)}" aria-label="Customer name" style="font-weight:700;border:none;padding:0;background:transparent"><button class="x" data-act="del" data-list="existing" data-i="${i}" aria-label="Remove customer">×</button></div>
-    <div class="two" style="margin-top:6px"><label class="sm">Net ARR ${amt(`existing.${i}.arr`, 'Net ARR')}</label><label class="sm">Renews ${inp(`existing.${i}.renew`, x.renew, 'month')}</label></div></div>`).join('')}
-  <button class="ghost" data-act="addExisting">Add customer</button>
-
-  <h2>Go to market</h2>
-  <div class="card">
-    <div style="font-size:13px;font-weight:700;margin-bottom:6px">New families per month</div>
-    <label class="row" style="justify-content:flex-start;gap:6px;font-size:13px;font-weight:700"><input type="checkbox" data-k="eng.ramp.on" data-full ${e.ramp.on ? 'checked' : ''}> Ramp up to target</label>
-    ${e.ramp.on ? `<div class="sm" style="display:grid;grid-template-columns:60px auto 1fr;gap:6px;align-items:center;margin-top:6px">
-      ${inp('eng.ramp.r1', e.ramp.r1, 'number', 'step="0.05" min="0" aria-label="Stage 1 families per month"')}<span>/mo from</span><span>M1, ${mLong(0)}</span>
-      ${inp('eng.ramp.r2', e.ramp.r2, 'number', 'step="0.05" min="0" aria-label="Stage 2 families per month"')}<span>/mo from</span>${sel('eng.ramp.m2', e.ramp.m2, monthOpts(2), 'data-full aria-label="Stage 2 start month"')}
-      ${inp('eng.target', e.target, 'number', 'step="0.25" min="0" aria-label="Target families per month"')}<span>/mo from</span>${sel('eng.ramp.m3', e.ramp.m3, monthOpts(Math.min(state.horizon, num(e.ramp.m2) + 1)), 'data-full aria-label="Target rate start month"')}
-    </div><div class="hint">Three stages: the first rate from M1, the second from its start month, then the target rate. All three are editable.</div>` : `<div class="sm" style="display:grid;grid-template-columns:60px auto 1fr;gap:6px;align-items:center;margin-top:6px">${inp('eng.target', e.target, 'number', 'step="0.25" min="0" aria-label="Target families per month"')}<span>/mo from</span><span>M1, ${mLong(0)}</span></div>`}
+  <h2>Signing ramp</h2>
+  <div class="card sm" style="display:grid;grid-template-columns:62px auto 1fr;gap:6px;align-items:center">
+    ${inp('sc.r1', s.r1, 'number', 'step="0.25" min="0" aria-label="Stage 1 new families per month"')}<span>/mo from</span><span>M1, ${mLong(0)}</span>
+    ${inp('sc.r2', s.r2, 'number', 'step="0.25" min="0" aria-label="Stage 2 new families per month"')}<span>/mo from</span>${sel('inp.m2', state.inp.m2, monthOpts(2), 'data-full aria-label="Stage 2 start"')}
+    ${inp('sc.r3', s.r3, 'number', 'step="0.25" min="0" aria-label="Stage 3 new families per month"')}<span>/mo from</span>${sel('inp.m3', state.inp.m3, monthOpts(3), 'data-full aria-label="Stage 3 start"')}
   </div>
-  ${slider('eng.cac', 'Sales cost per new family', 0, 10000, 500, 'money')}
+  ${field('inp.fam0', 'Families live at start', 'The deck counts 5: 3 live, 2 onboarding. Today only Rafferty pays.', '70px')}
 
-  <h2>Pricing basis</h2>
-  ${slider('eng.blend', 'Blended ARR per customer', 25000, 150000, 5000, 'money', 'Net, after discounts. A mix of $100K and $25K deals around a $50K to $70K middle. Replace with the actual average as contracts close.')}
-  ${slider('eng.uplift', 'ARR uplift at each anniversary', 0, 25, 1, 'pct', 'Expansion and price increase combined. Set to 0% to hold the blended number flat.')}
-  ${slider('eng.renew', 'Annual renewal rate', 70, 100, 1, 'pct')}
+  <h2>Pricing and retention</h2>
+  ${slider('sc.blend', 'Blended ARR per family', 25000, 150000, 5000, 'money', 'Net of discounts. Some $100K and some $25K deals around a $50K to $70K middle.')}
+  ${slider('sc.renew', 'Annual renewal rate', 70, 100, 1, 'pct', 'Gross revenue retention.')}
+  ${slider('inp.expand', 'Expansion at each renewal', 0, 30, 1, 'pct', 'Module cross-sell, added properties, entities and trusts, and Levels 2 and 3. Net revenue retention is renewal times expansion.')}
 
   <h2>Billing</h2>
-  ${slider('eng.credit', 'Year-one credit', 0, 3, 1, 'mo', 'Annual prepay at signing, less the credit. Additions pro-rata to the anniversary.')}
-  ${slider('eng.implPct', 'Implementation fee, share of ARR', 0, 60, 1, 'pct', 'Standard for now: 20% of ARR. The reference workbook uses 50% for individual families. Revisit once Rafferty onboarding hours are in.')}
-  <div class="derived" data-out="derived"></div>
+  ${slider('inp.credit', 'Year-one credit', 0, 3, 1, 'mo', 'Annual prepay at signing, less the credit.')}
+  ${slider('inp.implPct', 'Implementation fee, % of first-year fees', 0, 40, 1, 'pct')}
+  ${slider('inp.implSign', 'Share billed at signing', 0, 100, 10, 'pct', 'The rest at go-live acceptance.')}
+  ${slider('inp.golive', 'Signing to go-live', 0, 6, 1, 'mo')}
 
-  <h2>Expenses</h2>
-  <div class="mini h" style="grid-template-columns:1fr 66px 66px 66px"><span>Monthly, by bucket</span><span>Today</span><span>+ Raise</span><span>+ Families</span></div>
-  ${BUCKETS.map(b => `<div class="mini" style="grid-template-columns:1fr 66px 66px 66px;margin-top:5px"><span>${b}</span><span class="sm" data-out="td-${BK[b]}" style="text-align:right;padding-top:5px;font-weight:700"></span>${opxIn('raise', BK[b], b + ' added once the first raise lands')}${opxIn('fam', BK[b], b + ' added once families are live')}</div>`).join('')}
-  <div class="mini" style="grid-template-columns:1fr 66px 66px 66px;margin-top:6px;font-weight:700"><span>Total</span><span data-out="opT0"></span><span data-out="opT1"></span><span data-out="opT2"></span></div>
-  <div class="ctl" style="margin-top:10px"><div class="row"><label for="c-opex-n">Families live for the third step</label>${inp('opex.n', o.n, 'number', 'id="c-opex-n" min="1" step="1" style="width:64px"')}</div></div>
-  <div class="hint" data-out="stepHint"></div>
-  <div class="hint" style="margin-top:6px">Today is the sum of the line-by-line Current spend section: the reference workbook’s Q4 2026 run rate in standard SaaS buckets, plus current GTM spend not in the workbook. Spend steps up on milestones, not dates. The raise step funds a fractional CS leader, a partner and channel manager and first programs. The families step funds a founding AE, a marketing lead, a CSM and more programs. After the last step, burn holds until collections exceed spend.</div>
+  <h2>Partners</h2>
+  ${slider('inp.refShare', 'Share of new ARR from partners', 0, 100, 5, 'pct')}
+  ${slider('inp.refFee', 'Referral fee, % of first-year ARR', 0, 20, 0.5, 'pct', 'Midpoint of the 10% to 15% advisor range.')}
+
+  <h2>Product and G&amp;A, held flat</h2>
+  ${fieldAmt('inp.rd', 'R&D, monthly', 'Engineering, product, design and dev tools. Reported as R&D, not COGS.')}
+  ${fieldAmt('inp.cogs', 'COGS, monthly', 'Hosting, data feeds and customer support.')}
+  ${fieldAmt('inp.ga', 'G&A, monthly')}
   <p class="sm" style="margin-top:18px" id="saveNote">Saved on this device</p>`;
 }
 
+/* ===== tabs ===== */
+const TABS = [['plan','Plan'],['metrics','GTM metrics'],['team','GTM team'],['monthly','Monthly'],['track','Track'],['price','Price a family']];
+let tab = (location.hash || '').slice(1); if (!TABS.some(t => t[0] === tab)) tab = 'plan';
+window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (TABS.some(t => t[0] === h) && h !== tab){ tab = h; renderMain(); refresh(); } });
+
 function renderMain(){
-  document.getElementById('main').innerHTML = `
-  <div class="headline"><span class="big" id="h-payg"></span><span class="vs">low point</span><span class="big alt" id="h-low"></span></div>
+  const nav = `<nav class="tabs" style="margin-top:0">${TABS.map(([k, l]) => `<a href="#${k}" data-tab="${k}" ${k === tab ? 'aria-current="page"' : ''}>${l}</a>`).join('')}</nav>`;
+  let body = '';
+  if (tab === 'plan') body = `
+  <div class="headline"><span class="big" id="h-low"></span><span class="vs">lowest cash</span><span class="big alt" id="h-payg"></span></div>
   <div class="hl-label" id="h-label"></div>
   <div class="stats" id="stats"></div>
-  <div class="chartblock"><h3>Cash balance and ARR</h3><p>Cash at start plus each raise in the month it lands, plus cumulative collections minus spend. ARR is the subscription run rate from families signed, landing ACV, growth and renewals. Each January carries a milestone marker.</p><div id="ch-cash"></div></div>
-  <div class="chartblock"><h3>Monthly collections vs spend</h3><p>Bars show net cash each month. Annual prepay pulls each family’s year forward to signing.</p><div id="ch-flow"></div></div>
-  <div class="chartblock"><h3>Families on the platform</h3><p>The dashed line is the sustain target: families whose run rate covers monthly spend. Prepaid cash reaches pay-as-we-go before the solid line crosses it; crossing it is what makes the position permanent.</p><div id="ch-fam"></div></div>
-  <div class="chartblock"><h3>Track against plan</h3><p>Lock the current settings as the baseline. Each month, enter families signed, ARR and cash at month end, and see how far ahead or behind plan you are.</p>
-    <div class="btns" style="margin:4px 0 12px"><button data-act="lock">${state.baseline ? 'Re-lock this plan' : 'Lock this plan'}</button><button class="ghost" data-act="trackCsv" ${state.baseline ? '' : 'disabled'}>Export CSV</button><button class="ghost" data-act="clearActuals" ${state.baseline ? '' : 'disabled'}>Clear actuals</button></div>
-    ${state.baseline ? `<p class="sm">Baseline locked ${esc(state.baseline.at)}. Changing inputs afterward never moves it.</p><div class="scroll track" data-out="trackTable"></div>` : `<p class="sm">No plan locked yet. Set the inputs to the committed plan, then lock it.</p>`}</div>
-  <details class="chartblock" data-sec="spend" ${OPEN.has('spend') ? 'open' : ''}><summary><b>Current spend, line by line</b></summary><p style="margin-top:8px">Monthly run rate today, entered fully loaded. Bucket totals feed the Today column in the sidebar. Mark lines Confirmed as Beth’s actuals come in.</p>
-    <div data-out="spendFlag"></div>
-    <div class="scroll"><table><thead><tr><th>Bucket</th><th>Line</th><th class="num">Headcount</th><th class="num">Monthly</th><th>Status</th><th></th></tr></thead><tbody>
-    ${state.spend.map((l, i) => `<tr><td>${sel(`spend.${i}.bucket`, l.bucket, BUCKETS.map(b => [b, b]), 'aria-label="Bucket"')}</td><td>${inp(`spend.${i}.name`, l.name, 'text', 'class="name" aria-label="Line"')}</td>
-      <td class="num">${inp(`spend.${i}.hc`, l.hc, 'number', 'step="0.5" min="0" style="width:70px" aria-label="Headcount"')}</td><td class="num">${inp(`spend.${i}.monthly`, l.monthly, 'number', 'step="500" min="0" style="width:100px" aria-label="Monthly cost"')}</td>
-      <td>${sel(`spend.${i}.status`, l.status, STATUSES.map(v => [v, v]), 'aria-label="Status"')}</td><td><button class="x" data-act="del" data-list="spend" data-i="${i}" aria-label="Remove line">×</button></td></tr>`).join('')}</tbody></table></div>
-    <div class="btns"><button class="ghost" data-act="addSpend">Add line</button></div>
-    <div class="scroll" style="margin-top:12px" data-out="spendTotals"></div></details>
-  <details class="chartblock" data-sec="cap" ${OPEN.has('cap') ? 'open' : ''}><summary><b>Capacity</b></summary><p style="margin-top:8px">Checks Customer Success and selling capacity against the signings in the plan. Onboarding is the constraint to watch.</p>
-    <div class="capgrid">
-      <section class="capcol" aria-label="Customer Success assumptions"><h4>Customer Success</h4>
-        <div class="caprow"><span>FTE today, from spend lines</span><b class="capv" data-out="csToday"></b></div>
-        ${[['cap.onboardHrs','Onboarding hours per new family','1'],['cap.ongoingHrs','Ongoing hours per family, monthly','1'],['cap.csHrs','Hours per FTE, monthly','5'],['cap.csRaise','FTE added at the raise step','0.5'],['cap.csFam','FTE added at the families step','0.5']].map(([k, l, st]) => `<label class="caprow"><span>${l}</span>${inp(k, getPath(k), 'number', 'min="0" step="' + st + '" aria-label="' + l + '"')}</label>`).join('')}
-        <div class="caprow"><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-k="cap.agentOn" ${state.cap.agentOn ? 'checked' : ''}> Onboarding agent saves</label><span class="capin">${inp('cap.agentCut', state.cap.agentCut, 'number', 'min="0" max="90" step="5" aria-label="Onboarding hours saved by the agent, percent"')}<span>%</span></span></div>
-        <p class="hint">The reference workbook prices onboarding at roughly 560 hours per family.</p>
-      </section>
-      <section class="capcol" aria-label="Selling assumptions"><h4>Selling</h4>
-        <label class="caprow"><span>Annual new-ARR quota per seller</span>${amt('cap.quota', 'Annual new-ARR quota per seller')}</label>
-        ${[['cap.founder','Your selling capacity, seller equivalents'],['cap.sellToday','Other sellers today'],['cap.sellFam','Sellers added at the families step']].map(([k, l]) => `<label class="caprow"><span>${l}</span>${inp(k, getPath(k), 'number', 'min="0" step="0.25" aria-label="' + l + '"')}</label>`).join('')}
-        <p class="hint">Sellers needed is the next 12 months of new ARR divided by quota.</p>
-      </section>
-    </div>
-    <div data-out="capSummary"></div>
-    <div data-out="csChart"></div><div class="scroll" style="margin-top:10px" data-out="capTable"></div></details>
-  <details class="chartblock"><summary><b>Operating plan by month</b></summary><p style="margin-top:8px">Bucket totals for each month, ready to drop into the plan.</p><div class="scroll plan" data-out="planTable"></div>
-    <div class="btns"><button data-act="csv">Download operating plan CSV</button><button class="ghost" data-act="backup">Download backup</button><button class="ghost" data-act="restore">Restore from backup</button><button class="ghost" data-act="reset">Reset to starting values</button></div></details>
-  <details class="chartblock"><summary><b>Price a family</b></summary><p style="margin-top:8px">The Playbk price book, for scoping deals and sanity-checking the blended ARR. Modules are priced independently and summed. Implementation is a one-time fee on net platform fees. Loaded with Rafferty’s scope.</p>
-    <div class="statgrid">${MODS.map(m => `<label class="sm" style="display:flex;flex-direction:column;gap:4px">${MOD[m].label}, ${MOD[m].unit}${inp(`pf.${m}`, state.pf[m], 'number', 'min="0" step="1"')}</label>`).join('')}
-    <label class="sm" style="display:flex;flex-direction:column;gap:4px">Platform discount (%)${inp('pf.disc', state.pf.disc, 'number', 'min="0" max="50" step="1"')}</label></div>
-    <div class="scroll" style="margin-top:12px" data-out="priceTable"></div><div class="btns"><button class="ghost" data-act="rafferty">Load Rafferty’s scope</button></div></details>
-  <div class="foot">Mechanics model, not a forecast. Each new family signs at the blended ARR per customer, net of discounts, and steps up by the uplift at each anniversary. Billing is annual prepay: a family pays a year at signing less the year-one credit, and each anniversary renews the then-current ARR at the renewal rate. Implementation is collected at signing, as a share of ARR. Spend is today’s bucket totals, stepping up once the first raise lands and again once the set number of families are live, plus sales cost per new family. Pay-as-we-go is the first month net cash turns positive and holds through the horizon. Spend today is the sum of the line-by-line Current spend section. Module cross-sell and role-by-role hiring stay parked until there are three to five live customers.</div>`;
+  <div class="chartblock"><h3>Cash balance and ARR</h3><p>The round lands in its month. Cash then moves with collections less spend. Each December carries a marker.</p><div id="ch-cash"></div></div>
+  <div class="chartblock"><h3>Monthly collections vs spend</h3><p>Bars are net cash each month. Annual prepay pulls each family’s year forward to signing, so the bars jump in renewal months.</p><div id="ch-flow"></div></div>
+  <div class="chartblock"><h3>Year by year</h3><p>Calendar years. Product and G&amp;A held flat at today’s run rate; GTM steps up as milestones are met.</p><div class="scroll plan" data-out="annual"></div></div>
+  <div class="chartblock"><h3>Where the round goes</h3><p>Gross spend from the round to the cash low point, by function. Revenue covers the difference between it and the round.</p><div class="scroll" data-out="uof"></div></div>
+  <div class="chartblock"><h3>Three cases</h3><p>Same team plan and costs, with each case’s price, renewal and signing ramp. The conservative case shows what happens if hires go ahead before its milestones.</p><div class="scroll" data-out="cases"></div></div>
+  <div class="foot">Mechanics model, not a forecast. Families live decline monthly at the renewal rate and grow with new signings; each family’s ARR grows by the expansion rate at each anniversary. Each new family prepays a year at signing, less the credit; renewals bill annually on the signing anniversary; the families live at start pay monthly. Implementation is a share of first-year fees, split between signing and go-live. Revenue recognized is ARR over 12 plus implementation fees. GTM roles start when their trigger is met and stop when a stop trigger is met. Matches the GTM Stack and Cash Path workbook.</div>`;
+  else if (tab === 'metrics') body = `
+  <h2 class="sec">GTM metrics</h2>
+  <p class="lead">The health of the business at a glance: where we are today against the plan, and the plan against industry benchmarks. Type today’s numbers into the Current column; blanks show as TBD. Derived rows (in italics) calculate from the others.</p>
+  <div class="ctlrow"><label>Measure against the plan at ${sel('checkpoint', state.checkpoint, [5, 11, 17, 23, 35, 47].map(i => [i, mLong(i)]), 'data-full aria-label="Plan checkpoint"')}</label>
+    <label>Current state as of ${inp('cur.asOf', state.cur.asOf, 'text', 'style="width:100px" aria-label="Current state as of"')}</label></div>
+  <div class="keyrow"><span><i class="dot g"></i> On or ahead of target</span><span><i class="dot a"></i> Within 20%</span><span><i class="dot r"></i> More than 20% off</span><span>Score compares Current with Target. Plan check compares the plan’s own target with the benchmark.</span></div>
+  <div data-out="metricsCall"></div>
+  <div class="scroll"><table class="dash" data-out="dash"></table></div>
+  <div class="chartblock" style="margin-top:16px"><h3>Efficiency by year</h3><p>The plan’s calendar-year view. Year one carries the full GTM team before ARR builds; watch the trend.</p><div class="scroll" data-out="effYear"></div></div>
+  <div class="foot">Benchmarks: SaaS Capital 2025 retention by ACV ($50K to $100K: NRR 105%, GRR about 93%); 2026 Series A baselines ($1.5M to $3M ARR, NRR over 110%, burn multiple under 2x, gross margin over 70%); KeyBanc and Series A medians for burn multiple (about 1.9x); mid-market CAC payback of 14 to 18 months; Aleph x Benchmarkit new-logo cost of about $1.63 per $1 of new ARR; win rates of 25% to 35% mid-market and 12% to 18% enterprise. Plan figures use the 12 months ending at the checkpoint. CAC is fully loaded: CRO, marketing, sales and channels, partner fees. LTV is five years of gross profit with renewal and expansion. The CRO base is split two-thirds to sales and marketing, one-third to Customer Success.</div>`;
+  else if (tab === 'team') body = `
+  <h2 class="sec">GTM team and triggers</h2>
+  <p class="lead">Every GTM role, its monthly fully loaded cost and the milestone that starts it. Change a cost or a threshold and the whole plan moves. Starts are for the case selected at the top.</p>
+  <div class="scroll teamtab" data-out="roles"></div>
+  <div class="chartblock" style="margin-top:16px"><h3>GTM team at year end</h3><p>Plus the existing CS team and BDR (Rayna, Cristina, Gabby, Beth), costed as existing teams.</p><div class="scroll" data-out="teamYE"></div></div>`;
+  else if (tab === 'monthly') body = `
+  <h2 class="sec">Operating plan by month</h2><p class="lead">48 months, ready to drop into the plan.</p>
+  <div class="scroll plan" data-out="planTable"></div>
+  <div class="btns"><button data-act="csv">Download operating plan CSV</button><button class="ghost" data-act="backup">Download backup</button><button class="ghost" data-act="restore">Restore from backup</button><button class="ghost" data-act="reset">Reset to starting values</button></div>`;
+  else if (tab === 'track') body = `
+  <h2 class="sec">Track against plan</h2><p class="lead">Lock the committed plan as the baseline. Each month, enter families signed, ARR and cash at month end, and see how far ahead or behind plan you are.</p>
+  <div class="btns" style="margin:4px 0 12px"><button data-act="lock">${state.baseline ? 'Re-lock this plan' : 'Lock this plan'}</button><button class="ghost" data-act="trackCsv" ${state.baseline ? '' : 'disabled'}>Export CSV</button><button class="ghost" data-act="clearActuals" ${state.baseline ? '' : 'disabled'}>Clear actuals</button></div>
+  ${state.baseline ? `<p class="sm">Baseline locked ${esc(state.baseline.at)}. Changing inputs afterward never moves it.</p><div class="scroll track" data-out="trackTable"></div>` : `<p class="sm">No plan locked yet. Set the inputs to the committed plan, then lock it.</p>`}`;
+  else body = `
+  <h2 class="sec">Price a family</h2><p class="lead">The Playbk price book, for scoping deals and sanity-checking the blended ARR. Modules are priced independently and summed. Loaded with Rafferty’s scope.</p>
+  <div class="statgrid">${MODS.map(m => `<label class="sm" style="display:flex;flex-direction:column;gap:4px">${MOD[m].label}, ${MOD[m].unit}${inp(`pf.${m}`, state.pf[m], 'number', 'min="0" step="1"')}</label>`).join('')}
+  <label class="sm" style="display:flex;flex-direction:column;gap:4px">Platform discount (%)${inp('pf.disc', state.pf.disc, 'number', 'min="0" max="50" step="1"')}</label></div>
+  <div class="scroll" style="margin-top:12px" data-out="priceTable"></div><div class="btns"><button class="ghost" data-act="rafferty">Load Rafferty’s scope</button></div>`;
+  document.getElementById('main').innerHTML = nav + body;
 }
 
+/* ===== outputs ===== */
 const OUT = {};
-const OPEN = new Set();
-document.addEventListener('toggle', e => { const d = e.target; if (d.dataset && d.dataset.sec){ if (d.open) OPEN.add(d.dataset.sec); else OPEN.delete(d.dataset.sec); } }, true);
-OUT.derived = R => `ARR per new customer: <b>${money(R.per[0])}</b>. Cash at signing per family: <b>${money(R.per[0]*(1 - num(state.eng.credit)/12) + num(state.eng.implPct)/100*R.list[0])}</b>, a year prepaid less the credit, plus implementation. ARR at the second anniversary: <b>${money(num(state.eng.blend)*Math.pow(1 + num(state.eng.uplift)/100, 2))}</b>.`;
-OUT.opT0 = () => money(Object.values(spendToday()).reduce((s, v) => s + v, 0));
-['1','2'].forEach((k, j) => OUT['opT' + k] = () => money(Object.values(state.opex[['raise','fam'][j]]).reduce((s, v) => s + num(v), 0)));
-BUCKETS.forEach(b => OUT['td-' + BK[b]] = () => money(spendToday()[b]));
-OUT.spendFlag = () => { const n = state.spend.filter(l => l.status === 'Check overlap').length, w = state.spend.filter(l => l.status === 'Workbook estimate' || l.status === 'Needs input').length;
-  return n ? `<div class="callout">${n} lines may double count spend already elsewhere in the plan, and ${w} are workbook estimates not yet confirmed against actuals.</div>` : w ? `<div class="callout">${w} lines are workbook estimates not yet confirmed against actuals.</div>` : `<div class="callout ok">Every line is confirmed.</div>`; };
-OUT.spendTotals = () => { const t = spendToday(); const hc = b => state.spend.filter(l => l.bucket === b).reduce((s, l) => s + num(l.hc), 0);
-  return `<table><thead><tr><th>Bucket</th><th class="num">Headcount</th><th class="num">Monthly</th><th class="num">Annual</th></tr></thead><tbody>${BUCKETS.map(b => `<tr><td>${b}</td><td class="num">${hc(b)}</td><td class="num">${full(t[b])}</td><td class="num">${money(t[b]*12)}</td></tr>`).join('')}
-  <tr class="tot"><td><b>Total</b></td><td class="num"><b>${BUCKETS.reduce((s, b) => s + hc(b), 0)}</b></td><td class="num"><b>${full(Object.values(t).reduce((s, v) => s + v, 0))}</b></td><td class="num"><b>${money(Object.values(t).reduce((s, v) => s + v, 0)*12)}</b></td></tr></tbody></table>`; };
-OUT.csChart = R => chart([{name:'CS FTE needed', vals:R.csReq, color:'var(--amber-line)'}, {name:'CS FTE planned', vals:R.csPlan, color:'var(--btn)'}], {fmt:v => v.toFixed(1), label:'Customer Success FTE needed vs planned', marks:marks(R), h:230});
-OUT.csToday = () => state.spend.filter(l => l.bucket === 'Customer success').reduce((t, l) => t + num(l.hc), 0).toFixed(1);
-OUT.capSummary = R => { const short = (need, have) => { for (let i = 0; i < R.H; i++) if (have[i] + 0.05 < need[i]) return i; return -1; };
-  const cs = short(R.csReq, R.csPlan), sl = short(R.sellReq, R.sellPlan);
-  const msg = (name, i, need, have) => i < 0 ? `${name} covers the plan through M${R.H}.` : `${name} falls short from ${mName(i)}: ${have[R.H-1].toFixed(1)} planned against ${need[R.H-1].toFixed(1)} needed by M${R.H}.`;
-  return `<div class="callout${cs < 0 && sl < 0 ? ' ok' : ''}">${msg('Customer Success', cs, R.csReq, R.csPlan)} ${msg('Selling capacity', sl, R.sellReq, R.sellPlan)}</div>`; };
-OUT.capTable = R => { const c = (need, have) => `<span class="${have + 0.05 >= need ? 'okv' : 'gap'}">${have.toFixed(1)} of ${need.toFixed(1)}</span>`;
-  return `<table><thead><tr><th>Month</th><th class="num">New families</th><th class="num">Families live</th><th class="num">CS FTE, planned of needed</th><th class="num">Sellers, planned of needed</th></tr></thead><tbody>
-  ${[2, 5, 11, 17, 23, 35].filter(i => i < R.H).map(i => `<tr><td>M${i+1}, ${mLabel(i)}</td><td class="num">${R.sign[i].toFixed(2)}</td><td class="num">${R.fam[i].toFixed(1)}</td><td class="num">${c(R.csReq[i], R.csPlan[i])}</td><td class="num">${c(R.sellReq[i], R.sellPlan[i])}</td></tr>`).join('')}</tbody></table>`; };
-OUT.stepHint = R => `At these settings: step two starts ${R.step2 < R.H ? mName(R.step2) : 'when a raise is entered'}, step three ${R.step3 < R.H ? mName(R.step3) : 'not within ' + R.H + ' months'}.`;
-OUT.priceTable = () => { const p = state.pf; let list = 0;
-  const rows = MODS.map(m => { const v = num(p[m]); if (!v) return `<tr><td>${MOD[m].label}</td><td class="num">0</td><td>Not included</td><td class="num">$0</td></tr>`;
-    const t = tierOf(m, v); list += t.price; return `<tr><td>${MOD[m].label}</td><td class="num">${v}</td><td>Tier ${t.tier}</td><td class="num">${full(t.price)}</td></tr>`; }).join('');
-  const disc = list*num(p.disc)/100, net = list - disc, impl = net*num(state.eng.implPct)/100, y1 = net*(1 - num(state.eng.credit)/12);
-  return `<table><thead><tr><th>Module</th><th class="num">Volume</th><th>Tier</th><th class="num">List, annual</th></tr></thead><tbody>${rows}
-  <tr><td><b>List platform fees</b></td><td></td><td></td><td class="num"><b>${full(list)}</b></td></tr><tr><td>Discount (${num(p.disc)}%)</td><td></td><td></td><td class="num">-${full(disc)}</td></tr>
-  <tr><td><b>Net ACV</b></td><td></td><td></td><td class="num"><b>${full(net)}</b></td></tr><tr><td>Implementation (${num(state.eng.implPct)}% of net platform fees)</td><td></td><td></td><td class="num">${full(impl)}</td></tr>
-  <tr><td>Year one platform fees, less ${num(state.eng.credit)}-month credit</td><td></td><td></td><td class="num">${full(y1)}</td></tr><tr><td><b>Cash at signing</b></td><td></td><td></td><td class="num"><b>${full(y1 + impl)}</b></td></tr></tbody></table>`; };
-function planRows(R){ const H = R.H, sl = a => a.slice(0, H);
-  return [['Collections', sl(R.coll)], ['Of which implementation fees', sl(R.impl)], ['ARR, end of month', sl(R.arr)], ...BUCKETS.map(b => [b, R.byB[b]]),
-    ['Total spend', R.spend, 'tot'], ['Net cash', R.net], ['Raises', R.raise], ['Cash balance', R.cash, 'tot'], ['Families on the platform', sl(R.fam), 'n'], ['New families signed', sl(R.sign), 'n']]; }
+const TRIG = {
+  always:  t => 'From the start',
+  famLt:   t => 'While families live are under',
+  famGe:   t => 'Once families live reach',
+  arrLt:   t => 'While ARR is under',
+  arrGe:   t => 'Once ARR reaches',
+  perFam:  t => 'One per 20 families above',
+  signRun: t => `After ${t.run} month${num(t.run) > 1 ? 's' : ''} at this many new families a month${t.after ? ', once ' + (state.roles.find(r => r.id === t.after) || {}).name + ' is in' : ''}`,
+  afterRole: t => `Months after ${(state.roles.find(r => r.id === t.after) || {}).name} starts`,
+  fromMonth: t => 'From month (placeholder for 5 active partners)',
+  pctNew:  t => '% of new ARR',
+  referral: t => 'Partner share × referral fee (sidebar)'
+};
+const xField = (r, i) => { const t = r.trig;
+  if (['famLt','famGe','perFam','signRun','fromMonth','pctNew'].includes(t.k)) return inp(`roles.${i}.trig.x`, t.x, 'number', 'step="any" min="0" aria-label="Threshold"');
+  if (['arrLt','arrGe'].includes(t.k)) return amt(`roles.${i}.trig.x`, 'ARR threshold');
+  if (t.k === 'afterRole') return inp(`roles.${i}.trig.lag`, t.lag, 'number', 'step="1" min="0" aria-label="Months after"');
+  return ''; };
+OUT.roles = R => { const Y = years(R);
+  let h = `<table><thead><tr><th>Function</th><th>Role or line</th><th class="num">Monthly</th><th>Starts when</th><th class="num">Threshold</th><th>Starts</th>${Y.map(y => `<th class="num">${y.label}</th>`).join('')}</tr></thead><tbody>`;
+  FNS.forEach(f => { state.roles.forEach((r, i) => { if (r.fn !== f) return; const st = R.start[r.id]; const fixed = !['pctNew','referral'].includes(r.trig.k);
+    h += `<tr><td>${f}</td><td>${esc(r.name)}${r.note ? `<div class="hint">${esc(r.note)}</div>` : ''}</td><td class="num">${fixed ? amt(`roles.${i}.monthly`, r.name + ' monthly cost') : '<span class="tna">variable</span>'}</td>
+      <td class="sm" style="white-space:normal;min-width:200px">${TRIG[r.trig.k](r.trig)}</td><td class="num">${xField(r, i)}</td><td>${st === undefined ? '<span class="tna">Not by ' + mLong(R.H - 1) + '</span>' : r.trig.k === 'always' || r.trig.k === 'pctNew' || r.trig.k === 'referral' ? '<span class="tna">From start</span>' : mLong(st)}</td>
+      ${Y.map(y => `<td class="num">${money(sum(R.rc[r.id], y.f, y.t))}</td>`).join('')}</tr>`; });
+    h += `<tr class="tot"><td colspan="6"><b>${f} total</b></td>${Y.map(y => `<td class="num"><b>${money(sum(R.byFn[f], y.f, y.t))}</b></td>`).join('')}</tr>`; });
+  h += `<tr class="tot"><td colspan="6"><b>Total GTM cost</b></td>${Y.map(y => `<td class="num"><b>${money(sum(R.gtm, y.f, y.t))}</b></td>`).join('')}</tr>`;
+  h += `<tr><td colspan="6">GTM cost per $1 of new ARR</td>${Y.map(y => `<td class="num">$${(sum(R.gtm, y.f, y.t)/Math.max(1, sum(R.newArr, y.f, y.t))).toFixed(2)}</td>`).join('')}</tr>`;
+  return h + '</tbody></table>'; };
+function teamAt(R, i){ const t = {}; TEAM.forEach(k => t[k] = 0); state.roles.forEach(r => { if (r.team) t[r.team] += R.rn[r.id][i]; }); return t; }
+OUT.teamYE = R => { const Y = years(R);
+  return `<table><thead><tr><th>Role</th>${Y.map(y => `<th class="num">Dec ${y.label}</th>`).join('')}</tr></thead><tbody>${TEAM.map(k => `<tr><td>${k}</td>${Y.map(y => `<td class="num">${teamAt(R, y.t)[k]}</td>`).join('')}</tr>`).join('')}
+  <tr class="tot"><td>Total GTM headcount</td>${Y.map(y => `<td class="num">${Object.values(teamAt(R, y.t)).reduce((a, b) => a + b, 0)}</td>`).join('')}</tr></tbody></table>`; };
+OUT.annual = R => { const Y = years(R); const row = (n, f, cls = '', fm = money) => `<tr class="${cls}"><td>${n}</td>${Y.map(y => `<td class="num">${fm(f(y))}</td>`).join('')}</tr>`;
+  const S = (a, y) => sum(a, y.f, y.t); const n0 = v => v.toFixed(0);
+  return `<table><thead><tr><th>${state.preset ? PRESETS[state.preset].label + ' case' : 'Custom case'}</th>${Y.map(y => `<th class="num">${y.label}</th>`).join('')}</tr></thead><tbody>
+  ${row('New families signed', y => S(R.sign, y), '', n0)}${row('Families live, year end', y => R.fam[y.t], '', n0)}${row('New ARR', y => S(R.newArr, y))}${row('ARR, year end', y => R.arr[y.t], 'tot')}
+  ${row('Revenue recognized', y => S(R.rev, y))}${row('Cash collected', y => S(R.coll, y))}
+  ${row('Product (R&D and COGS)', y => S(R.product, y))}${row('G&A', y => S(R.ga, y))}${row('Customer success', y => S(R.byFn['Customer success'], y))}
+  ${row('Sales and channels (CRO, marketing, sales, partners)', y => S(R.byFn['Leadership'], y) + S(R.byFn['Marketing'], y) + S(R.byFn['Sales and channels'], y))}
+  ${row('Total cost', y => S(R.spend, y), 'tot')}${row('Net cash flow', y => S(R.net, y))}${row('Cash, year end', y => R.cash[y.t], 'tot')}
+  ${row('Gross margin', y => { const rv = S(R.rev, y); return rv ? (rv - S(R.cogs, y))/rv : 0; }, '', v => Math.round(v*100) + '%')}</tbody></table>`; };
+OUT.uof = R => { const e = R.low, S = a => sum(a, 0, e); const lines = [['Product', S(R.product)], ['Customer success', S(R.byFn['Customer success'])], ['Sales and channels', S(R.byFn['Leadership']) + S(R.byFn['Marketing']) + S(R.byFn['Sales and channels'])], ['G&A', S(R.ga)]];
+  const tot = lines.reduce((s, l) => s + l[1], 0), rd = num(state.inp.round);
+  return `<table><thead><tr><th>To ${mLong(e)}</th><th class="num">Spend</th><th class="num">Share</th><th class="num">Of the round</th></tr></thead><tbody>${lines.map(([n, v]) => `<tr><td>${n}</td><td class="num">${money(v)}</td><td class="num">${Math.round(v/tot*100)}%</td><td class="num">${money(v/tot*rd)}</td></tr>`).join('')}
+  <tr class="tot"><td>Total</td><td class="num">${money(tot)}</td><td class="num">100%</td><td class="num">${money(rd)}</td></tr></tbody></table>`; };
+OUT.cases = () => { const rs = Object.entries(PRESETS).map(([k, p]) => [p.label, run(p)]); const R0 = rs[0][1]; const Y = years(R0);
+  const pos = R => R.payg < 0 ? 'Not by ' + mLong(R.H - 1) : mLong(R.payg);
+  return `<table><thead><tr><th>Cash, year end</th>${Y.map(y => `<th class="num">${y.label}</th>`).join('')}<th class="num">Lowest cash</th><th>Lowest in</th><th>Cash-flow positive from</th></tr></thead><tbody>
+  ${rs.map(([l, R]) => `<tr><td>${l}</td>${Y.map(y => `<td class="num ${R.cash[y.t] < 0 ? 'gap' : ''}">${money(R.cash[y.t])}</td>`).join('')}<td class="num ${R.cash[R.low] < 0 ? 'gap' : ''}">${money(R.cash[R.low])}</td><td>${mLong(R.low)}</td><td>${pos(R)}</td></tr>`).join('')}
+  <tr><td colspan="${Y.length + 4}" class="sm">Families live, year end: ${rs.map(([l, R]) => l + ' ' + Y.map(y => R.fam[y.t].toFixed(0)).join(', ')).join('. ')}.</td></tr></tbody></table>`; };
+
+/* ===== GTM metrics dashboard ===== */
+function ltv5(acv, gm, ren, ex){ let s = 0; for (let k = 0; k < 5; k++) s += Math.pow(ren*ex, k); return acv*gm*s; }
+function planAt(R, c){
+  const w0 = Math.max(0, c - 11), n = c - w0 + 1, S = a => sum(a, w0, c);
+  const newFam = S(R.sign), newArr = S(R.newArr), sm = S(R.byFn['Leadership']) + S(R.byFn['Marketing']) + S(R.byFn['Sales and channels']);
+  const rev = S(R.rev), gm = rev ? (rev - S(R.cogs))/rev : 0, netSum = S(R.net), arr0 = w0 === 0 ? num(state.inp.fam0)*R.B : R.arr[w0-1];
+  const cac = newFam ? sm/newFam : 0, ltv = ltv5(R.B, gm, R.ren, R.ex), burn = -netSum/n;
+  const csFte = teamAt(R, c);
+  return { fam:R.fam[c], arr:R.arr[c], sign:R.sign[c], acv:R.B, win:num(state.tgt.win), cycle:num(state.tgt.cycle), cover:num(state.tgt.cover),
+    partnerShare:num(state.inp.refShare), partners:num(state.tgt.partners), grr:R.ren*100, nrr:R.ren*R.ex*100, golive:num(state.inp.golive)*30,
+    gm:gm*100, cac, ltv, ltvcac: cac ? ltv/cac : 0, payback: cac && gm > 0 ? cac/(R.B/12*gm) : 0,
+    burnMult: burn > 0 ? (-netSum)/Math.max(1, R.arr[c] - arr0) : 0, gtmPer: S(R.gtm)/Math.max(1, newArr), burn, cash:R.cash[c],
+    runway: burn > 0 ? R.cash[c]/burn : Infinity,
+    lead:R.byFn['Leadership'][c], cs:R.byFn['Customer success'][c], mkt:R.byFn['Marketing'][c], sales:R.byFn['Sales and channels'][c], rd:R.rd[c], cogs:R.cogs[c], ga:R.ga[c] };
+}
+function curDerived(){
+  const c = state.cur, v = k => blank(c[k]) ? '' : num(c[k]);
+  const fam = v('fam'), arr = v('arr'), sign = v('sign');
+  const acv = fam && arr !== '' ? arr/fam : '';
+  const mrr = arr === '' ? 0 : arr/12;
+  const gm = arr ? (mrr - num(c.cogs))/mrr*100 : '';
+  const smM = num(c.lead) + num(c.mkt) + num(c.sales);
+  const cac = sign ? smM/sign : '';
+  const ren = blank(c.grr) ? state.sc.renew/100 : num(c.grr)/100;
+  const ltv = acv !== '' && gm !== '' && gm > 0 ? ltv5(acv, gm/100, ren, 1 + num(state.inp.expand)/100) : '';
+  const payback = cac !== '' && acv !== '' && gm !== '' && gm > 0 ? cac/(acv/12*gm/100) : (cac !== '' && gm !== '' && gm <= 0 ? Infinity : '');
+  const spend = smM + num(c.cs) + num(c.rd) + num(c.cogs) + num(c.ga);
+  const burn = spend - mrr;
+  const nn = v('netNew');
+  return { acv, gm, cac, ltv, ltvcac: cac !== '' && ltv !== '' ? ltv/cac : '', payback, burn, burnMult: nn ? burn*12/nn : '',
+    gtmPer: nn ? (smM + num(c.cs))*12/nn : '', runway: blank(c.cash) ? '' : burn > 0 ? num(c.cash)/burn : Infinity, gtmTot: smM + num(c.cs), spend };
+}
+const F = {
+  int: v => blank(v) ? '' : (Math.round(v*10)/10).toLocaleString('en-US'), usd: v => blank(v) ? '' : money(v), pct: v => blank(v) ? '' : Math.round(v) + '%',
+  x: v => blank(v) ? '' : v === Infinity ? 'n/a' : v.toFixed(1) + 'x', mo: v => blank(v) ? '' : v === Infinity ? 'n/a' : Math.round(v) + ' mo', days: v => blank(v) ? '' : Math.round(v) + ' days', dper: v => blank(v) ? '' : '$' + v.toFixed(2)
+};
+/* dir: 1 higher is better, -1 lower is better. bm: [green test, amber test] on the plan target */
+const METRICS = [
+  {sec:'Growth and pipeline'},
+  {k:'fam', name:'Families live (paying)', f:'int', dir:1, in:'num', bmt:'Series A readiness: 5 referenceable families', note:'Plan counts 5 at the start of 2027; today one family pays. Each family is a reference for the next.'},
+  {k:'arr', name:'ARR', f:'usd', dir:1, in:'amt', bmt:'$1.5M to $3M ARR for a 2026 Series A', bm:v => v >= 1.5e6 ? 'g' : v >= 1.2e6 ? 'a' : 'r', note:'The number Rafferty will track first. Net contracted ARR, after discounts.'},
+  {k:'sign', name:'New families a month', f:'int', dir:1, in:'num', bmt:'Plan ramp: 1, then 2, then 3 a month', note:'Trailing 3-month average. The founding AE fires after 2 months at 2 a month.'},
+  {k:'acv', name:'Blended ARR per family (ACV)', f:'usd', dir:1, drv:true, bmt:'$50K to $100K band: mid-market to enterprise', bm:v => v >= 50000 && v <= 100000 ? 'g' : v >= 40000 ? 'a' : 'r', note:'Planned at $60K. Replace with the actual average as contracts close.'},
+  {k:'win', name:'Win rate, qualified opportunities', f:'pct', dir:1, in:'num', bmt:'25% to 35% mid-market; 12% to 18% enterprise', bm:v => v >= 12 && v <= 35 ? 'g' : 'a', note:'Measured from the Qualification stage in Playbk, so it reflects MEDDPICC discipline.'},
+  {k:'cycle', name:'Sales cycle', f:'mo', dir:-1, in:'num', bmt:'1 to 3 months mid-market; 3 to 12 enterprise', bm:v => v <= 6 ? 'g' : 'a', note:'First meeting to signature. Referral deals should run shorter.'},
+  {k:'cover', name:'Pipeline coverage', f:'x', dir:1, in:'num', bmt:'3x to 4x the next quarter’s new ARR', bm:v => v >= 3 ? 'g' : 'a', note:'Qualified pipeline divided by planned new ARR for the next quarter.'},
+  {k:'partnerShare', name:'Partner-sourced share of new ARR', f:'pct', dir:1, in:'num', bmt:'Referral-led motion: half or more', bm:v => v >= 40 ? 'g' : 'a', note:'Rafferty came through Merrill. Drives referral fees at 10% to 15% of first-year ARR.'},
+  {k:'partners', name:'Active referral partners', f:'int', dir:1, in:'num', bmt:'5 active triggers the partner manager', note:'Advisors, institutions and accounting firms producing qualified opportunities.'},
+  {sec:'Retention and onboarding'},
+  {k:'grr', name:'Gross revenue retention', f:'pct', dir:1, in:'num', bmt:'About 93% median at $25K to $100K ACV', bm:v => v >= 92 ? 'g' : v >= 88 ? 'a' : 'r', note:'Plan uses the annual renewal rate. First renewal is Rafferty, October 2027.'},
+  {k:'nrr', name:'Net revenue retention', f:'pct', dir:1, in:'num', bmt:'105% median at $50K to $100K ACV; over 110% for a Series A', bm:v => v >= 110 ? 'g' : v >= 100 ? 'a' : 'r', note:'Renewal times expansion. Expansion is module cross-sell, added properties, entities and trusts, and Levels 2 and 3. Rafferty’s October 2027 renewal is the first real data point.'},
+  {k:'golive', name:'Signing to go-live (Level 1)', f:'days', dir:-1, in:'num', bmt:'Plan assumes 60 days', note:'The onboarding agent and the Data Collection Hub are what keep this short.'},
+  {sec:'Unit economics and efficiency'},
+  {k:'gm', name:'Gross margin', f:'pct', dir:1, drv:true, bmt:'70% to 80%; over 70% for a Series A', bm:v => v >= 70 ? 'g' : v >= 60 ? 'a' : 'r', note:'Engineering sits in R&D, not COGS. COGS is hosting, data feeds and support, mostly fixed, so margin is negative on one family today and climbs fast with scale.'},
+  {k:'cac', name:'CAC, fully loaded', f:'usd', dir:-1, drv:true, bmt:'Judge against ACV through payback and LTV:CAC', note:'Monthly CRO, marketing, sales and partner cost divided by new families a month.'},
+  {k:'ltv', name:'5-year LTV', f:'usd', dir:1, drv:true, bmt:'Five years of gross profit with renewal and expansion', note:'No value counted beyond year five, so well below the standard lifetime formula. Blank today while gross margin is below zero.'},
+  {k:'ltvcac', name:'LTV:CAC', f:'x', dir:1, drv:true, bmt:'Over 3x', bm:v => v >= 3 ? 'g' : v >= 1.5 ? 'a' : 'r', note:'Rises as partner referrals carry more of the selling, the fixed GTM base spreads over more families, and families expand.'},
+  {k:'payback', name:'CAC payback', f:'mo', dir:-1, drv:true, bmt:'14 to 18 months mid-market median; under 12 is top tier', bm:v => v <= 18 ? 'g' : v <= 30 ? 'a' : 'r', note:'Annual prepay recovers cash faster than this suggests.'},
+  {k:'burnMult', name:'Burn multiple', f:'x', dir:-1, drv:true, bmt:'Under 2x at Series A (median about 1.9x)', bm:v => v <= 2 ? 'g' : v <= 3 ? 'a' : 'r', note:'Net burn divided by net new ARR. Year one is the investment year right after the raise; see the trend by year below.'},
+  {k:'gtmPer', name:'GTM cost per $1 of new ARR', f:'dper', dir:-1, drv:true, bmt:'About $1.63 for new-logo ARR', bm:v => v <= 1.63 ? 'g' : v <= 2.2 ? 'a' : 'r', note:'All of GTM, including Customer Success.'},
+  {sec:'Cash'},
+  {k:'burn', name:'Monthly net burn', f:'usd', dir:-1, drv:true, bmt:'Plan: average of the 12 months', note:'Spend less collections. Today derived from the spend rows below and current ARR.'},
+  {k:'cash', name:'Cash on hand', f:'usd', dir:1, in:'amt', bmt:R => 'Plan low point ' + money(R.cash[R.low]) + ', ' + mLong(R.low), note:'Confirm today’s balance with Cristina.'},
+  {k:'runway', name:'Runway', f:'mo', dir:1, drv:true, bmt:'18 to 24 months after a raise', bm:v => v >= 18 ? 'g' : v >= 12 ? 'a' : 'r', note:'Cash on hand divided by monthly net burn.'},
+  {sec:'GTM and operating spend, monthly'},
+  {k:'lead', name:'Leadership (CRO)', f:'usd', dir:-1, in:'amt', band:0.1, bmt:'One executive over sales, marketing and CS', note:'Today: the half-time retainer. Plan: full-time CRO from the round.'},
+  {k:'cs', name:'Customer success', f:'usd', dir:-1, in:'amt', band:0.1, bmt:'Adds a CSM per 20 families; full-time Head of CS at 50', note:'Existing team plus Nicole, fractional.'},
+  {k:'mkt', name:'Marketing', f:'usd', dir:-1, in:'amt', band:0.1, bmt:'Full-time marketer at $1.5M ARR', note:'Tom, fractional, plus programs at 10% of new ARR.'},
+  {k:'sales', name:'Sales and channels', f:'usd', dir:-1, in:'amt', band:0.1, bmt:'AEs on signing milestones; partner manager at 5 partners', note:'Includes tools, Beth and partner referral fees.'},
+  {k:'gtmTot', name:'Total GTM spend', f:'usd', dir:-1, drv:true, band:0.1, bmt:'', note:''},
+  {k:'rd', name:'R&D', f:'usd', dir:-1, in:'amt', band:0.1, bmt:'Held at today’s run rate', note:'Engineering, product, design and dev tools.'},
+  {k:'cogs', name:'COGS', f:'usd', dir:-1, in:'amt', band:0.1, bmt:'Held at today’s run rate', note:'Hosting, data feeds and customer support.'},
+  {k:'ga', name:'G&A', f:'usd', dir:-1, in:'amt', band:0.1, bmt:'Held at today’s run rate', note:''},
+  {k:'spend', name:'Total monthly spend', f:'usd', dir:-1, drv:true, band:0.1, bmt:'', note:''}
+];
+function score(cur, tgt, dir, band = 0.2){
+  if (blank(cur) || blank(tgt)) return '';
+  if (cur === Infinity) return dir > 0 ? 'g' : 'r';
+  if (dir > 0){ if (cur >= tgt) return 'g'; return cur >= tgt*(1 - band) ? 'a' : 'r'; }
+  if (cur <= tgt) return 'g'; return cur <= tgt*(1 + band) ? 'a' : 'r';
+}
+const dot = s => s ? `<i class="dot ${s}" title="${{g:'On or ahead', a:'Within range', r:'Off target'}[s]}"></i>` : '<span class="tna">TBD</span>';
+OUT.dash = R => {
+  const c = state.checkpoint, P = planAt(R, c), D = curDerived();
+  P.gtmTot = P.lead + P.cs + P.mkt + P.sales; P.spend = P.gtmTot + P.rd + P.cogs + P.ga;
+  let h = `<thead><tr><th>Metric</th><th class="num">Current state</th><th class="num">Target, ${mLabel(c)}</th><th>Score</th><th>Industry benchmark</th><th>Plan check</th><th>Notes</th></tr></thead><tbody>`;
+  METRICS.forEach(m => {
+    if (m.sec){ h += `<tr class="sechd"><td colspan="7">${m.sec}</td></tr>`; return; }
+    const cur = m.drv ? D[m.k] : (blank(state.cur[m.k]) ? '' : num(state.cur[m.k]));
+    const tgt = P[m.k];
+    const curCell = m.drv ? `<td class="num drv">${F[m.f](cur) || '<span class="tna">TBD</span>'}</td>`
+      : `<td class="num cur">${m.in === 'amt' ? amt('cur.' + m.k, m.name + ', current') : inp('cur.' + m.k, state.cur[m.k], 'number', 'step="any" placeholder="TBD" aria-label="' + esc(m.name) + ', current"')}</td>`;
+    const pc = m.bm && !blank(tgt) && tgt !== Infinity ? dot(m.bm(tgt)) : '';
+    h += `<tr><td class="mname">${esc(m.name)}</td>${curCell}<td class="num">${tgt === Infinity ? 'Cash positive' : F[m.f](tgt)}</td><td>${dot(score(cur, tgt === Infinity ? '' : tgt, m.dir, m.band))}</td><td class="bm">${esc(typeof m.bmt === 'function' ? m.bmt(R) : m.bmt)}</td><td>${pc}</td><td class="note">${esc(m.note)}</td></tr>`;
+  });
+  return h + '</tbody>';
+};
+OUT.effYear = R => { const Y = years(R); const P = Y.map(y => planAt(R, y.t)); const d = (v, g, a, hi) => dot(hi ? (v >= g ? 'g' : v >= a ? 'a' : 'r') : (v <= g ? 'g' : v <= a ? 'a' : 'r'));
+  const rows = [['Net revenue retention', p => p.nrr, F.pct, p => d(p.nrr, 105, 100, 1)], ['Gross margin', p => p.gm, F.pct, p => d(p.gm, 70, 60, 1)], ['CAC, fully loaded', p => p.cac, F.usd, () => ''],
+    ['CAC payback', p => p.payback, F.mo, p => d(p.payback, 18, 30)], ['LTV:CAC', p => p.ltvcac, F.x, p => d(p.ltvcac, 3, 1.5, 1)],
+    ['Burn multiple', p => p.burnMult, v => v ? F.x(v) : 'Cash positive', p => d(p.burnMult, 2, 3)], ['GTM cost per $1 of new ARR', p => p.gtmPer, F.dper, p => d(p.gtmPer, 1.63, 2.2)]];
+  return `<table><thead><tr><th>Metric</th>${Y.map(y => `<th class="num">${y.label}</th><th></th>`).join('')}</tr></thead><tbody>${rows.map(([n, g, f, s]) => `<tr><td>${n}</td>${P.map(p => `<td class="num">${f(g(p))}</td><td>${s(p)}</td>`).join('')}</tr>`).join('')}</tbody></table>`; };
+OUT.metricsCall = R => { const P = planAt(R, state.checkpoint); const w = [];
+  if (P.payback > 18) w.push(`CAC payback of ${Math.round(P.payback)} months`);
+  if (P.ltvcac < 3) w.push(`LTV:CAC of ${P.ltvcac.toFixed(1)}x`);
+  if (P.nrr < 100) w.push(`NRR of ${Math.round(P.nrr)}%`);
+  if (P.burnMult > 2) w.push(`a burn multiple of ${P.burnMult.toFixed(1)}x`);
+  return w.length ? `<div class="callout">At ${mLong(state.checkpoint)}, the plan itself sits outside benchmark on ${w.join(', ').replace(/, ([^,]*)$/, ' and $1')}. Expect Rafferty to ask about these.</div>` : `<div class="callout ok">At ${mLong(state.checkpoint)}, the plan meets the efficiency benchmarks shown.</div>`; };
+
+/* ===== monthly table, CSV, tracking, price book ===== */
+function planRows(R){ return [['New families signed', R.sign, 'n'], ['Families live', R.fam, 'n'], ['ARR, end of month', R.arr], ['New ARR', R.newArr], ['Collections', R.coll], ['Of which implementation', R.impl], ['Revenue recognized', R.rev],
+  ...FNS.map(f => [f, R.byFn[f]]), ['R&D', R.rd], ['COGS', R.cogs], ['G&A', R.ga], ['Total cost', R.spend, 'tot'], ['Net cash flow', R.net], ['Raise', R.raise], ['Cash balance', R.cash, 'tot']]; }
 OUT.planTable = R => `<table><thead><tr><th>Line</th>${R.spend.map((_, i) => `<th class="num">M${i+1}<br>${mLabel(i)}</th>`).join('')}</tr></thead><tbody>
   ${planRows(R).map(([n, v, t]) => `<tr class="${t === 'tot' ? 'tot' : ''}"><td>${n}</td>${v.map(x => `<td class="num ${t !== 'n' && x < -0.5 ? 'gap' : ''}">${t === 'n' ? x.toFixed(1) : money(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
-function csv(){ const R = model(); const q = s => '"' + String(s).replace(/"/g, '""') + '"';
+function csv(){ const R = run(); const q = s => '"' + String(s).replace(/"/g, '""') + '"';
   const rows = [['Line', ...R.spend.map((_, i) => mISO(i))].map(q).join(',')];
   planRows(R).forEach(([n, v, t]) => rows.push([n, ...v.map(x => t === 'n' ? x.toFixed(2) : Math.round(x))].map(q).join(','))); return rows.join('\n'); }
-function todayIdx(){ const d = new Date(); return (d.getFullYear() - +state.startMonth.slice(0, 4))*12 + (d.getMonth() + 1 - +state.startMonth.slice(5, 7)); }
 function trackRows(){ const b = state.baseline; if (!b) return []; const keys = Object.keys(state.actuals).map(Number).filter(k => { const a = state.actuals[k]; return a && (a.nf !== '' || a.arr !== '' || a.cash !== ''); });
-  const n = Math.min(b.fam.length, Math.max(3, todayIdx() + 2, ...keys.map(k => k + 2))); let cum = b.fam0; const out = [];
+  const ti = (() => { const d = new Date(); return (d.getFullYear() - +state.startMonth.slice(0, 4))*12 + (d.getMonth() + 1 - +state.startMonth.slice(5, 7)); })();
+  const n = Math.min(b.fam.length, Math.max(3, ti + 2, ...keys.map(k => k + 2))); let cum = b.fam0; const out = [];
   for (let i = 0; i < n; i++){ const a = state.actuals[i] || {}; const has = a.nf !== undefined && a.nf !== ''; if (has) cum += num(a.nf);
     out.push({i, planFam:b.fam[i], nf:a.nf ?? '', actFam: has ? cum : null, planArr:b.arr[i], arr:a.arr ?? '', planCash:b.cash[i], cash:a.cash ?? ''}); } return out; }
 OUT.trackTable = () => { const dv = (a, p, f) => a === '' || a === null ? '' : `<span class="${a - p >= 0 ? 'okv' : 'gap'}">${a - p >= 0 ? '+' : ''}${f(a - p)}</span>`;
@@ -489,26 +641,34 @@ OUT.trackTable = () => { const dv = (a, p, f) => a === '' || a === null ? '' : `
     <td class="num">${r.actFam === null ? '' : r.actFam.toFixed(0)}</td><td class="num">${dv(r.actFam, r.planFam, v => v.toFixed(1))}</td>
     <td class="num">${money(r.planArr)}</td><td class="num"><input type="text" inputmode="numeric" data-act-in="arr" data-i="${r.i}" value="${r.arr === '' ? '' : full(num(r.arr))}" aria-label="ARR, actual"></td><td class="num">${dv(r.arr === '' ? '' : num(r.arr), r.planArr, money)}</td>
     <td class="num">${money(r.planCash)}</td><td class="num"><input type="text" inputmode="numeric" data-act-in="cash" data-i="${r.i}" value="${r.cash === '' ? '' : full(num(r.cash))}" aria-label="Cash, actual"></td><td class="num">${dv(r.cash === '' ? '' : num(r.cash), r.planCash, money)}</td></tr>`).join('')}</tbody></table>`; };
+OUT.priceTable = () => { const p = state.pf; let list = 0;
+  const rows = MODS.map(m => { const v = num(p[m]); if (!v) return `<tr><td>${MOD[m].label}</td><td class="num">0</td><td>Not included</td><td class="num">$0</td></tr>`;
+    const t = tierOf(m, v); list += t.price; return `<tr><td>${MOD[m].label}</td><td class="num">${v}</td><td>Tier ${t.tier}</td><td class="num">${full(t.price)}</td></tr>`; }).join('');
+  const disc = list*num(p.disc)/100, net = list - disc, impl = list*num(state.inp.implPct)/100, y1 = net*(1 - num(state.inp.credit)/12);
+  return `<table><thead><tr><th>Module</th><th class="num">Volume</th><th>Tier</th><th class="num">List, annual</th></tr></thead><tbody>${rows}
+  <tr><td><b>List platform fees</b></td><td></td><td></td><td class="num"><b>${full(list)}</b></td></tr><tr><td>Discount (${num(p.disc)}%)</td><td></td><td></td><td class="num">(${full(disc)})</td></tr>
+  <tr><td><b>Net ARR</b></td><td></td><td></td><td class="num"><b>${full(net)}</b></td></tr><tr><td>Implementation (${num(state.inp.implPct)}% of list platform fees)</td><td></td><td></td><td class="num">${full(impl)}</td></tr>
+  <tr><td>Year one platform fees, less ${num(state.inp.credit)}-month credit</td><td></td><td></td><td class="num">${full(y1)}</td></tr><tr><td><b>Cash in year one</b></td><td></td><td></td><td class="num"><b>${full(y1 + impl)}</b></td></tr></tbody></table>`; };
 
 function refresh(){
-  const R = model(); window.__R = R; const H = R.H, last = H - 1;
-  document.getElementById('h-payg').textContent = R.payg < 0 ? 'Not yet' : 'M' + (R.payg + 1);
-  document.getElementById('h-low').textContent = money(R.cash[R.low]);
-  document.getElementById('h-label').textContent = R.payg < 0 ? `Collections don’t cover spend within ${H} months at these settings. Low point ${mLong(R.low)}.` : `${mLong(R.payg)}: the month collections exceed spend and stay there, at these settings. Low point ${mLong(R.low)}.`;
-  const noCash = num(state.cash) === 0;
-  document.getElementById('stats').innerHTML = [
-    [money(R.bridge), 'One-time bridge to reach pay-as-we-go, before raises'],
-    [noCash ? 'Enter cash' : R.out < 0 ? 'Funded through M' + H : 'Out of cash M' + (R.out + 1), 'Runway with capital raised'],
-    [R.payg < 0 ? 'n/a' : R.fam[R.payg].toFixed(1), 'Families on the platform at pay-as-we-go'],
-    [money(R.arr[last]), `ARR at M${H}, ${R.fam[last].toFixed(0)} families`],
-    [money(R.arr[0]/12) + ' vs ' + money(R.spend[0]), 'Run rate vs monthly spend today']
-  ].map(([v, l]) => `<div class="stat"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
-  document.getElementById('ch-cash').innerHTML = chart([{name:'Cash balance', vals:R.cash, color:'var(--btn)'}, {name:'ARR', vals:R.arr.slice(0, H), color:'var(--greenl)', dash:true}], {fmt:money, label:'Cash balance and ARR by month', marks:marks(R)});
-  document.getElementById('ch-flow').innerHTML = chart([{name:'Net cash', vals:R.net, color:'var(--greenl)', neg:'var(--red)', type:'bar'}, {name:'Collections', vals:R.coll.slice(0, H), color:'var(--btn)'}, {name:'Spend', vals:R.spend, color:'var(--amber-line)'}], {fmt:money, label:'Monthly collections, spend and net cash', h:240});
-  const sustain = R.spend.map((s, i) => { const apf = R.fam[i] > 0 ? R.arr[i]/R.fam[i] : R.per[0]; return apf > 0 ? s/(apf/12) : 0; });
-  document.getElementById('ch-fam').innerHTML = chart([{name:'Families on the platform', vals:R.fam.slice(0, H), color:'var(--btn)'}, {name:'Sustain target', vals:sustain, color:'var(--muted)', dash:true}], {fmt:v => v.toFixed(0), label:'Families on the platform with the sustain target', marks:marks(R)});
+  const R = run(); window.__R = R; const H = R.H, last = H - 1;
+  const el = id => document.getElementById(id);
+  if (el('h-low')){
+    el('h-low').textContent = money(R.cash[R.low]);
+    el('h-payg').textContent = R.payg < 0 ? 'Not yet positive' : 'Positive ' + mLabel(R.payg);
+    el('h-label').textContent = (R.out >= 0 ? `Cash runs out ${mLong(R.out)} at these settings. ` : `Funded through ${mLong(last)}. `) + `Cash bottoms ${mLong(R.low)}` + (R.payg < 0 ? `, and collections don’t cover spend for good within ${H} months.` : `, and collections cover spend for good from ${mLong(R.payg)}.`);
+    el('stats').innerHTML = [
+      [R.fam[last].toFixed(0), `Families live, ${mLong(last)}`],
+      [money(R.arr[last]), `ARR, ${mLong(last)}`],
+      [money(R.arr[11]), `ARR, ${mLong(11)}, ${R.fam[11].toFixed(0)} families`],
+      [money(sum(R.gtm)), 'GTM cost over 4 years'],
+      [money(R.cash[last]), `Cash, ${mLong(last)}`]
+    ].map(([v, l]) => `<div class="stat"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+    el('ch-cash').innerHTML = chart([{name:'Cash balance', vals:R.cash, color:'var(--btn)'}, {name:'ARR', vals:R.arr, color:'var(--greenl)', dash:true}], {fmt:money, label:'Cash balance and ARR by month', marks:marks(R)});
+    el('ch-flow').innerHTML = chart([{name:'Net cash', vals:R.net, color:'var(--greenl)', neg:'var(--red)', type:'bar'}, {name:'Collections', vals:R.coll, color:'var(--btn)'}, {name:'Spend', vals:R.spend, color:'var(--amber-line)'}], {fmt:money, label:'Monthly collections, spend and net cash', h:240});
+  }
   document.querySelectorAll('output[data-for]').forEach(o => { o.textContent = FMT[o.dataset.fmt](getPath(o.dataset.for)); });
-  document.querySelectorAll('[data-out]').forEach(el => { const f = OUT[el.dataset.out]; if (f) el.innerHTML = f(R); });
+  document.querySelectorAll('[data-out]').forEach(e => { const f = OUT[e.dataset.out]; if (f) e.innerHTML = f(R); });
   document.querySelectorAll('#presets button[data-preset]').forEach(b => b.classList.toggle('active', b.dataset.preset === state.preset));
 }
 function renderAll(){ renderAside(); renderMain(); refresh(); }
@@ -516,53 +676,53 @@ function renderAll(){ renderAside(); renderMain(); refresh(); }
 /* ===== events ===== */
 document.getElementById('presets').innerHTML = Object.entries(PRESETS).map(([k, p]) => `<button data-preset="${k}">${p.label}</button>`).join('');
 document.getElementById('presets').addEventListener('click', e => { const b = e.target.closest('button[data-preset]'); if (!b) return; const p = PRESETS[b.dataset.preset];
-  Object.assign(state.eng, {target:p.target, ramp:clone(p.ramp), blend:p.blend, renew:p.renew}); state.preset = b.dataset.preset; scheduleSave(); renderAll(); });
+  state.sc = {blend:p.blend, renew:p.renew, r1:p.r1, r2:p.r2, r3:p.r3}; state.preset = b.dataset.preset; scheduleSave(); renderAll(); });
 function onField(e){
   const t = e.target;
   if (t.dataset && t.dataset.actIn){ if (e.type === 'input' && t.type !== 'number') return; const i = t.dataset.i; const a = state.actuals[i] = state.actuals[i] || {nf:'', arr:'', cash:''};
-    if (t.dataset.actIn === 'nf') a.nf = t.value; else { const v = t.value.trim() === '' ? '' : parseAmt(t.value); if (v === null) return; a[t.dataset.actIn] = v; }
+    if (t.dataset.actIn === 'nf') a.nf = t.value; else { const v = parseAmt(t.value); if (v === null) return; a[t.dataset.actIn] = v; }
     scheduleSave(); if (e.type === 'change'){ const el = document.querySelector('[data-out="trackTable"]'); if (el) el.innerHTML = OUT.trackTable(); } return; }
   if (!t.dataset || !t.dataset.k) return;
-  if (e.type === 'input' && (t.type === 'checkbox' || t.tagName === 'SELECT' || t.type === 'month')) return;
+  if (e.type === 'input' && (t.type === 'checkbox' || t.tagName === 'SELECT' || t.type === 'text')) return;
   let val;
   if (t.type === 'checkbox') val = t.checked;
-  else if (t.hasAttribute('data-amt')){ const v = parseAmt(t.value); if (v === null) return; val = v; if (e.type === 'change') t.value = t.hasAttribute('data-k-short') ? money(v) : full(v); }
-  else if (t.hasAttribute('data-num') || t.tagName === 'SELECT' && /\.(mo|m2|m3)$/.test(t.dataset.k)) val = num(t.value);
+  else if (t.hasAttribute('data-amt')){ const v = parseAmt(t.value); if (v === null) return; val = v; }
+  else if (t.hasAttribute('data-num')) val = t.value === '' && t.dataset.k.startsWith('cur.') ? '' : num(t.value);
+  else if (t.tagName === 'SELECT') val = num(t.value);
   else val = t.value;
-  if (t.type === 'month' && !val) return;
   setPath(t.dataset.k, val);
-  if (['eng.target','eng.ramp','eng.blend','eng.renew'].some(p => t.dataset.k.startsWith(p))) state.preset = '';
-  if (t.dataset.k === 'eng.ramp.m2' && num(state.eng.ramp.m3) <= val) state.eng.ramp.m3 = Math.min(state.horizon, val + 1);
+  if (t.dataset.k.startsWith('sc.')) state.preset = '';
+  if (t.dataset.k === 'inp.m2' && num(state.inp.m3) <= val) state.inp.m3 = Math.min(state.horizon, val + 1);
   scheduleSave();
-  if (e.type === 'change' && t.hasAttribute('data-full')) renderAll(); else refresh();
+  if (e.type === 'change' && (t.hasAttribute('data-full') || t.hasAttribute('data-amt') || t.type === 'text')){ renderAll(); return; }
+  if (e.type === 'input' && t.type === 'number' && t.closest('main')){ refreshKeepFocus(t); return; }
+  refresh();
 }
-document.addEventListener('input', onField); document.addEventListener('change', onField);
-document.addEventListener('focusin', e => { const t = e.target; if (t.hasAttribute && t.hasAttribute('data-k-short')) { t.value = full(num(getPath(t.dataset.k))); t.select(); } });
-document.addEventListener('focusout', e => { const t = e.target; if (t.hasAttribute && t.hasAttribute('data-k-short')) t.value = money(num(getPath(t.dataset.k))); });
+function refreshKeepFocus(t){ /* re-render outputs that do not contain the field being typed in */
+  const R = run(); window.__R = R;
+  document.querySelectorAll('output[data-for]').forEach(o => { o.textContent = FMT[o.dataset.fmt](getPath(o.dataset.for)); });
+  document.querySelectorAll('[data-out]').forEach(e => { if (e.contains(t)) return; const f = OUT[e.dataset.out]; if (f) e.innerHTML = f(R); });
+}
+document.addEventListener('input', onField); document.addEventListener('change', e => { onField(e); });
 document.addEventListener('click', e => {
+  const tb = e.target.closest('[data-tab]'); if (tb){ e.preventDefault(); tab = tb.dataset.tab; try { history.replaceState(null, '', '#' + tab); } catch (err) { location.hash = tab; } renderMain(); refresh(); return; }
   const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act;
-  if (a === 'del') state[b.dataset.list].splice(+b.dataset.i, 1);
-  else if (a === 'addRaise') state.raises.push({id:nid('t'), name:'Raise ' + (state.raises.length + 1), amt:500000, mo:13});
-  else if (a === 'addSpend') state.spend.push({id:nid('s'), bucket:'G&A', name:'New line', hc:0, monthly:0, status:'Needs input'});
-  else if (a === 'addExisting') state.existing.push({id:nid('e'), name:'New customer', arr:25000, renew:mISO(11)});
-  else if (a === 'rafferty') state.pf = clone(DEFAULT.pf);
-  else if (a === 'lock'){ if (state.baseline && !confirm('Replace the locked baseline with the current settings? Actuals you entered stay.')) return;
-    const R = model(); state.baseline = {at:new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}), fam:R.fam.slice(0, R.H).map(v => +v.toFixed(3)), arr:R.arr.slice(0, R.H).map(Math.round), cash:R.cash.map(Math.round), fam0:state.existing.length}; }
-  else if (a === 'clearActuals'){ if (!confirm('Clear every actual you entered?')) return; state.actuals = {}; }
+  const done = () => { scheduleSave(); renderAll(); };
+  if (a === 'rafferty') { state.pf = clone(DEFAULT.pf); done(); }
+  else if (a === 'lock'){ const go = () => { const R = run(); state.baseline = {at:new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}), fam:R.fam.map(v => +v.toFixed(3)), arr:R.arr.map(Math.round), cash:R.cash.map(Math.round), fam0:num(state.inp.fam0)}; done(); };
+    if (state.baseline) ask('Replace the locked baseline with the current settings? Actuals you entered stay.', go); else go(); }
+  else if (a === 'clearActuals') ask('Clear every actual you entered?', () => { state.actuals = {}; done(); });
   else if (a === 'trackCsv'){ const q = s => '"' + String(s).replace(/"/g, '""') + '"'; const rows = [['Month','Families plan','New families actual','Families actual','ARR plan','ARR actual','Cash plan','Cash actual'].map(q).join(',')];
-    trackRows().forEach(r => rows.push([mISO(r.i), r.planFam.toFixed(2), r.nf, r.actFam ?? '', r.planArr, r.arr, r.planCash, r.cash].map(q).join(','))); offerFile('eleven-track-against-plan.csv', rows.join('\n')); return; }
-  else if (a === 'csv'){ offerFile('eleven-operating-plan.csv', csv()); return; }
-  else if (a === 'backup'){ offerFile('eleven-gtm-model-backup.json', JSON.stringify(state, null, 2)); return; }
-  else if (a === 'restore'){ document.getElementById('restoreFile').click(); return; }
-  else if (a === 'reset'){ if (!confirm('Reset every input to the starting values? Download a backup first if you want to keep this version.')) return; state = clone(DEFAULT); }
-  else return;
-  scheduleSave(); renderAll();
+    trackRows().forEach(r => rows.push([mISO(r.i), r.planFam.toFixed(2), r.nf, r.actFam ?? '', r.planArr, r.arr, r.planCash, r.cash].map(q).join(','))); offerFile('eleven-track-against-plan.csv', rows.join('\n')); }
+  else if (a === 'csv') offerFile('eleven-operating-plan.csv', csv());
+  else if (a === 'backup') offerFile('eleven-gtm-model-backup.json', JSON.stringify(state, null, 2));
+  else if (a === 'restore') document.getElementById('restoreFile').click();
+  else if (a === 'reset') ask('Reset every input to the starting values? Download a backup first if you want to keep this version.', () => { state = clone(DEFAULT); done(); });
 });
 document.getElementById('restoreFile').addEventListener('change', async e => { const f = e.target.files[0]; if (!f) return;
-  try { state = migrate(JSON.parse(await f.text())); scheduleSave(); renderAll(); } catch (err) { alert('That file isn’t a backup from this model. Choose the JSON file from “Download backup”.'); }
+  try { state = migrate(JSON.parse(await f.text())); scheduleSave(); renderAll(); } catch (err) { document.getElementById('copyTitle').textContent = 'That file isn’t a backup from this model'; document.getElementById('copyText').value = 'Choose the JSON file from Download backup.'; document.getElementById('copyDlg').showModal(); }
   e.target.value = ''; });
 renderAll();
-
 </script>
 </body>
 </html>
