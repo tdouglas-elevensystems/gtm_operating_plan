@@ -135,6 +135,8 @@ details.chartblock summary{cursor:pointer;font-size:15.5px;list-style-position:i
 .dot{display:inline-block;width:13px;height:13px;border-radius:50%;vertical-align:middle}
 .dot.g{background:var(--green)}.dot.a{background:var(--amber)}.dot.r{background:var(--red)}
 .dash td{vertical-align:top}
+.dash th:nth-child(4),.dash td:nth-child(4),.dash th:nth-child(6),.dash td:nth-child(6){text-align:center}
+.eff td.dc{text-align:center}
 .dash td.cur input{width:110px;text-align:right;padding:3px 6px}
 .dash tr.sechd td{background:transparent!important;color:var(--blue);font-weight:700;font-size:13px;padding-top:16px;border-bottom:1px solid var(--th)}
 .dash td.note{color:var(--muted);font-size:12.5px;min-width:260px;max-width:420px;white-space:normal}
@@ -613,7 +615,7 @@ OUT.effYear = R => { const Y = years(R); const P = Y.map(y => planAt(R, y.t)); c
   const rows = [['Net revenue retention', p => p.nrr, F.pct, p => d(p.nrr, 105, 100, 1)], ['Gross margin', p => p.gm, F.pct, p => d(p.gm, 70, 60, 1)], ['CAC, fully loaded', p => p.cac, F.usd, () => ''],
     ['CAC payback', p => p.payback, F.mo, p => d(p.payback, 18, 30)], ['LTV:CAC', p => p.ltvcac, F.x, p => d(p.ltvcac, 3, 1.5, 1)],
     ['Burn multiple', p => p.burnMult, v => v ? F.x(v) : 'Cash positive', p => d(p.burnMult, 2, 3)], ['GTM cost per $1 of new ARR', p => p.gtmPer, F.dper, p => d(p.gtmPer, 1.63, 2.2)]];
-  return `<table><thead><tr><th>Metric</th>${Y.map(y => `<th class="num">${y.label}</th><th></th>`).join('')}</tr></thead><tbody>${rows.map(([n, g, f, s]) => `<tr><td>${n}</td>${P.map(p => `<td class="num">${f(g(p))}</td><td>${s(p)}</td>`).join('')}</tr>`).join('')}</tbody></table>`; };
+  return `<table class="eff"><thead><tr><th>Metric</th>${Y.map(y => `<th class="num">${y.label}</th><th></th>`).join('')}</tr></thead><tbody>${rows.map(([n, g, f, s]) => `<tr><td>${n}</td>${P.map(p => `<td class="num">${f(g(p))}</td><td class="dc">${s(p)}</td>`).join('')}</tr>`).join('')}</tbody></table>`; };
 OUT.metricsCall = R => { const P = planAt(R, state.checkpoint); const w = [];
   if (P.payback > 18) w.push(`CAC payback of ${Math.round(P.payback)} months`);
   if (P.ltvcac < 3) w.push(`LTV:CAC of ${P.ltvcac.toFixed(1)}x`);
