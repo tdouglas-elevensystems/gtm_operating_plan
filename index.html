@@ -411,7 +411,7 @@ function renderAside(){
 }
 
 /* ===== tabs ===== */
-const TABS = [['plan','Plan'],['metrics','GTM metrics'],['team','GTM team'],['monthly','Monthly'],['track','Track'],['price','Price a family']];
+const TABS = [['plan','Plan'],['metrics','GTM metrics'],['team','GTM team'],['quarterly','Quarterly'],['track','Track'],['price','Price a family']];
 let tab = (location.hash || '').slice(1); if (!TABS.some(t => t[0] === tab)) tab = 'plan';
 window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (TABS.some(t => t[0] === h) && h !== tab){ tab = h; renderMain(); refresh(); } });
 
@@ -443,10 +443,10 @@ function renderMain(){
   <p class="lead">Every GTM role, its monthly fully loaded cost and the milestone that starts it. Change a cost or a threshold and the whole plan moves. Starts are for the case selected at the top.</p>
   <div class="scroll teamtab" data-out="roles"></div>
   <div class="chartblock" style="margin-top:16px"><h3>GTM team at year end</h3><p>Plus the existing CS team and BDR (Rayna, Cristina, Gabby, Beth), costed as existing teams.</p><div class="scroll" data-out="teamYE"></div></div>`;
-  else if (tab === 'monthly') body = `
-  <h2 class="sec">Operating plan by month</h2><p class="lead">48 months, ready to drop into the plan.</p>
-  <div class="scroll plan" data-out="planTable"></div>
-  <div class="btns"><button data-act="csv">Download operating plan CSV</button><button class="ghost" data-act="backup">Download backup</button><button class="ghost" data-act="restore">Restore from backup</button><button class="ghost" data-act="reset">Reset to starting values</button></div>`;
+  else if (tab === 'quarterly') body = `
+  <h2 class="sec">Operating plan by quarter</h2><p class="lead">16 quarters to Q4 2030. Families, ARR and cash are at quarter end; everything else is the quarter’s total. The CSV download stays monthly.</p>
+  <div class="scroll plan" data-out="qTable"></div>
+  <div class="btns"><button data-act="csv">Download monthly CSV</button><button class="ghost" data-act="backup">Download backup</button><button class="ghost" data-act="restore">Restore from backup</button><button class="ghost" data-act="reset">Reset to starting values</button></div>`;
   else if (tab === 'track') body = `
   <h2 class="sec">Track against plan</h2><p class="lead">Lock the committed plan as the baseline. Each month, enter families signed, ARR and cash at month end, and see how far ahead or behind plan you are.</p>
   <div class="btns" style="margin:4px 0 12px"><button data-act="lock">${state.baseline ? 'Re-lock this plan' : 'Lock this plan'}</button><button class="ghost" data-act="trackCsv" ${state.baseline ? '' : 'disabled'}>Export CSV</button><button class="ghost" data-act="clearActuals" ${state.baseline ? '' : 'disabled'}>Clear actuals</button></div>
@@ -622,8 +622,14 @@ OUT.metricsCall = R => { const P = planAt(R, state.checkpoint); const w = [];
   return w.length ? `<div class="callout">At ${mLong(state.checkpoint)}, the plan itself sits outside benchmark on ${w.join(', ').replace(/, ([^,]*)$/, ' and $1')}. Expect Rafferty to ask about these.</div>` : `<div class="callout ok">At ${mLong(state.checkpoint)}, the plan meets the efficiency benchmarks shown.</div>`; };
 
 /* ===== monthly table, CSV, tracking, price book ===== */
-function planRows(R){ return [['New families signed', R.sign, 'n'], ['Families live', R.fam, 'n'], ['ARR, end of month', R.arr], ['New ARR', R.newArr], ['Collections', R.coll], ['Of which implementation', R.impl], ['Revenue recognized', R.rev],
+function planRows(R){ return [['New families signed', R.sign, 'n'], ['Families live', R.fam, 'n'], ['ARR, end of month', R.arr, 'end'], ['New ARR', R.newArr], ['Collections', R.coll], ['Of which implementation', R.impl], ['Revenue recognized', R.rev],
   ...FNS.map(f => [f, R.byFn[f]]), ['R&D', R.rd], ['COGS', R.cogs], ['G&A', R.ga], ['Total cost', R.spend, 'tot'], ['Net cash flow', R.net], ['Raise', R.raise], ['Cash balance', R.cash, 'tot']]; }
+const STOCK = new Set(['Families live', 'ARR, end of month', 'Cash balance']);
+OUT.qTable = R => { const Q = []; for (let q = 0; q*3 < R.H; q++){ const f = q*3, t = Math.min(R.H, f + 3) - 1; const [y, m] = ymOf(f); Q.push({f, t, label:'Q' + (Math.floor(m/3) + 1) + ' ' + String(y).slice(2), yEnd: Math.floor(m/3) === 3}); }
+  const rows = planRows(R).map(([n, v, t]) => [n === 'ARR, end of month' ? 'ARR, end of quarter' : n, v, t, STOCK.has(n)]);
+  return `<table><thead><tr><th>Line</th>${Q.map(q => `<th class="num"${q.yEnd ? ' style="border-right:2px solid var(--line)"' : ''}>${q.label}</th>`).join('')}</tr></thead><tbody>
+  ${rows.map(([n, v, t, stock]) => `<tr class="${t === 'tot' ? 'tot' : ''}"><td>${n}</td>${Q.map(q => { const x = stock ? v[q.t] : sum(v, q.f, q.t);
+    return `<td class="num ${t !== 'n' && x < -0.5 ? 'gap' : ''}"${q.yEnd ? ' style="border-right:2px solid var(--line)"' : ''}>${t === 'n' ? x.toFixed(stock ? 0 : 1) : money(x)}</td>`; }).join('')}</tr>`).join('')}</tbody></table>`; };
 OUT.planTable = R => `<table><thead><tr><th>Line</th>${R.spend.map((_, i) => `<th class="num">M${i+1}<br>${mLabel(i)}</th>`).join('')}</tr></thead><tbody>
   ${planRows(R).map(([n, v, t]) => `<tr class="${t === 'tot' ? 'tot' : ''}"><td>${n}</td>${v.map(x => `<td class="num ${t !== 'n' && x < -0.5 ? 'gap' : ''}">${t === 'n' ? x.toFixed(1) : money(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
 function csv(){ const R = run(); const q = s => '"' + String(s).replace(/"/g, '""') + '"';
