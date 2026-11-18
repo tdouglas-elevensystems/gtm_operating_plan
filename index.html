@@ -418,7 +418,7 @@ function renderAside(){
 }
 
 /* ===== tabs ===== */
-const TABS = [['plan','Plan'],['metrics','GTM metrics'],['team','GTM team'],['quarterly','Quarterly'],['track','Track'],['price','Price a family']];
+const TABS = [['plan','Plan'],['metrics','GTM metrics'],['team','GTM team'],['quarterly','Quarterly'],['track','Track']];
 let tab = (location.hash || '').slice(1); if (!TABS.some(t => t[0] === tab)) tab = 'plan';
 window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (TABS.some(t => t[0] === h) && h !== tab){ tab = h; renderMain(); refresh(); } });
 
@@ -433,7 +433,8 @@ function renderMain(){
   <div class="chartblock"><h3>Monthly collections vs spend</h3><p>Bars are net cash each month. Annual prepay pulls each family’s year forward to signing, so the bars jump in renewal months.</p><div id="ch-flow"></div></div>
   <div class="chartblock"><h3>Year by year</h3><p>Calendar years. Product and G&amp;A held flat at today’s run rate; GTM steps up as milestones are met.</p><div class="scroll plan" data-out="annual"></div></div>
   <div class="chartblock"><h3>Where the round goes</h3><p>Gross spend from the round to the cash low point, by function. Revenue covers the difference between it and the round.</p><div class="scroll" data-out="uof"></div></div>
-  <div class="chartblock"><h3>Three cases</h3><p>Same team plan and costs, with each case’s price, renewal and signing ramp. The conservative case shows what happens if hires go ahead before its milestones.</p><div class="scroll" data-out="cases"></div></div>
+  <div class="chartblock"><h3>Where ARR growth comes from</h3><p>Each year starts from the prior year’s ARR, adds new families and growth from existing families, and loses churn. Shows how much of the plan rests on the growth and retention assumptions.</p><div data-out="arrBridge"></div></div>
+  <div class="chartblock"><h3>Three cases</h3><p>Same team plan and costs, with each case’s client mix, renewal and signings. Cash stays positive in every case.</p><div data-out="casesChart"></div><div class="scroll" style="margin-top:10px" data-out="cases"></div></div>
   <div class="foot">Mechanics model, not a forecast. Families live decline monthly at the renewal rate and grow with new signings; each family’s ARR grows by the expansion rate at each anniversary. Each new family prepays a year at signing, less the credit; renewals bill annually on the signing anniversary; the families live at start pay monthly. Implementation is a share of first-year fees, split between signing and go-live. Revenue recognized is ARR over 12 plus implementation fees. GTM roles start when their trigger is met and stop when a stop trigger is met. Matches the GTM Stack and Cash Path workbook.</div>`;
   else if (tab === 'metrics') body = `
   <h2 class="sec">GTM metrics</h2>
@@ -443,7 +444,7 @@ function renderMain(){
   <div class="keyrow"><span><i class="dot g"></i> On or ahead of target</span><span><i class="dot a"></i> Within 20%</span><span><i class="dot r"></i> More than 20% off</span><span>Score compares Current with Target. Plan check compares the plan’s own target with the benchmark.</span></div>
   <div data-out="metricsCall"></div>
   <div class="scroll"><table class="dash" data-out="dash"></table></div>
-  <div class="chartblock" style="margin-top:16px"><h3>Efficiency by year</h3><p>The plan’s calendar-year view. Year one carries the full GTM team before ARR builds; watch the trend.</p><div class="scroll" data-out="effYear"></div></div>
+  <div class="chartblock" style="margin-top:16px"><h3>Efficiency by year</h3><p>The plan’s calendar-year view. Year one carries the full GTM team before ARR builds; watch the trend. Shaded bands are the benchmark ranges.</p><div data-out="effChart"></div><div class="scroll" style="margin-top:10px" data-out="effYear"></div></div>
   <div class="foot">Benchmarks: SaaS Capital 2025 retention by ACV ($50K to $100K: NRR 105%, GRR about 93%); 2026 Series A baselines ($1.5M to $3M ARR, NRR over 110%, burn multiple under 2x, gross margin over 70%); KeyBanc and Series A medians for burn multiple (about 1.9x); mid-market CAC payback of 14 to 18 months; Aleph x Benchmarkit new-logo cost of about $1.63 per $1 of new ARR; win rates of 25% to 35% mid-market and 12% to 18% enterprise. Plan figures use the 12 months ending at the checkpoint. CAC is fully loaded: CRO, marketing, sales and channels, partner fees. LTV is five years of gross profit with renewal and expansion. The CRO base is split two-thirds to sales and marketing, one-third to Customer Success.</div>`;
   else if (tab === 'team') body = `
   <h2 class="sec">GTM team and triggers</h2>
@@ -453,6 +454,7 @@ function renderMain(){
     <h3 style="margin-top:18px">Headcount and GTM cost</h3><p>Headcount counts new GTM roles, not the existing CS team and BDR. Cost is everything GTM spends in the year, including existing teams, programs and partner fees.</p><div data-out="teamChart"></div></div>`;
   else if (tab === 'quarterly') body = `
   <h2 class="sec">Operating plan by quarter</h2><p class="lead">16 quarters to Q4 2030. Families, ARR and cash are at quarter end; everything else is the quarter’s total. The CSV download stays monthly.</p>
+  <div class="chartblock"><h3>Revenue, cost and cash by quarter</h3><p>Left bar: revenue recognized. Right bar: total cost by function. The line is cash at quarter end. Revenue passing cost is the path to profitability.</p><div data-out="qChart"></div></div>
   <div class="scroll plan" data-out="qTable"></div>
   <div class="btns"><button data-act="csv">Download monthly CSV</button><button class="ghost" data-act="backup">Download backup</button><button class="ghost" data-act="restore">Restore from backup</button><button class="ghost" data-act="reset">Reset to starting values</button></div>`;
   else if (tab === 'track') body = `
@@ -535,6 +537,43 @@ OUT.uof = R => { const e = R.low, S = a => sum(a, 0, e); const lines = [['Produc
   const tot = lines.reduce((s, l) => s + l[1], 0), rd = num(state.inp.round);
   return `<table><thead><tr><th>To ${mLong(e)}</th><th class="num">Spend</th><th class="num">Share</th><th class="num">Of the round</th></tr></thead><tbody>${lines.map(([n, v]) => `<tr><td>${n}</td><td class="num">${money(v)}</td><td class="num">${Math.round(v/tot*100)}%</td><td class="num">${money(v/tot*rd)}</td></tr>`).join('')}
   <tr class="tot"><td>Total</td><td class="num">${money(tot)}</td><td class="num">100%</td><td class="num">${money(rd)}</td></tr></tbody></table>`; };
+OUT.casesChart = () => { const cols = {cons:'#9A9A9A', real:'var(--btn)', up:'var(--greenl)'};
+  const rs = Object.entries(PRESETS).map(([k, p]) => ({name:p.label, vals:run(p).cash, color:cols[k]}));
+  const R0 = run(PRESETS.real); return chart(rs, {fmt:money, label:'Cash balance by case', h:250, marks:[11, 23, 35].map(i => ({i, title:mLong(i), lines:rs.map(s => s.name.slice(0, 4) + ' ' + money(s.vals[i]))}))}); };
+function arrBridge(R){ const Y = years(R); const out = []; let prev = R.F0*R.B; const q = 1 - (1 - R.ren)/12;
+  Y.forEach(y => { let nw = 0, ch = 0, ex = 0, p = y.f === 0 ? prev : R.arr[y.f - 1]; const start = p;
+    for (let i = y.f; i <= y.t; i++){ const c = p*(1 - q), n = R.newArr[i], e = R.arr[i] - p*q - n; nw += n; ch += c; ex += e; p = R.arr[i]; }
+    out.push({label:y.label, start, nw, ex, ch, end:R.arr[y.t]}); });
+  return out; }
+OUT.arrBridge = R => { const Bd = arrBridge(R); const steps = [{l:'Start', v:Bd[0].start, k:'tot'}];
+  Bd.forEach(b => { steps.push({l:'New', v:b.nw, k:'new'}, {l:'Growth', v:b.ex, k:'ex'}, {l:'Churn', v:-b.ch, k:'ch'}, {l:'Dec ' + b.label.slice(2), v:b.end, k:'tot'}); });
+  const W = 860, H = 300, L = 60, Rr = 10, T = 18, B = 34, n = steps.length; const top = Math.max(...Bd.map(b => b.end + b.ch))*1.08;
+  const bw = (W - L - Rr)/n, x = i => L + bw*i, y = v => T + (H - T - B)*(1 - v/top);
+  const col = {tot:'#6B6B6B', new:'var(--btn)', ex:'var(--greenl)', ch:'var(--red)'};
+  let g = '<g class="grid">'; for (let k = 0; k <= 4; k++){ const v = top*k/4; g += `<line x1="${L}" x2="${W-Rr}" y1="${y(v)}" y2="${y(v)}"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end">${money(v)}</text>`; } g += '</g>';
+  let run_ = 0;
+  steps.forEach((s, i) => { let a, b2; if (s.k === 'tot'){ a = 0; b2 = s.v; run_ = s.v; } else { a = run_; b2 = run_ + s.v; run_ = b2; }
+    const lo = Math.min(a, b2), hi = Math.max(a, b2);
+    g += `<rect x="${x(i) + bw*0.15}" width="${bw*0.7}" y="${y(hi)}" height="${Math.max(1, y(lo) - y(hi))}" fill="${col[s.k]}"><title>${esc(s.l)}: ${money(s.v)}</title></rect>`;
+    if (s.k === 'tot' || Math.abs(s.v) >= top*0.04) g += `<text x="${x(i) + bw/2}" y="${y(hi) - 5}" text-anchor="middle" style="font-size:10.5px;${s.k === 'tot' ? 'font-weight:700;fill:var(--ink)' : ''}">${s.k === 'ch' ? '-' : s.k === 'tot' ? '' : '+'}${money(Math.abs(s.v))}</text>`;
+    g += `<text x="${x(i) + bw/2}" y="${H - 18}" text-anchor="middle" style="font-size:10px">${esc(s.l)}</text>`; });
+  Bd.forEach((b, k) => { g += `<text x="${x(1 + 4*k) + bw*2}" y="${H - 4}" text-anchor="middle" style="font-weight:700">${b.label}</text>`; });
+  const tN = Bd.reduce((s, b) => s + b.nw, 0), tE = Bd.reduce((s, b) => s + b.ex, 0), tC = Bd.reduce((s, b) => s + b.ch, 0);
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="ARR bridge by year">${g}</svg>
+  <div class="legend"><span><i style="background:var(--btn);height:10px"></i>New families</span><span><i style="background:var(--greenl);height:10px"></i>Growth from existing families</span><span><i style="background:var(--red);height:10px"></i>Churn</span><span><i style="background:#6B6B6B;height:10px"></i>ARR at year end</span></div>
+  <p class="sm" style="margin-top:6px">Over four years: ${money(tN)} from new families, ${money(tE)} from growth in existing families, ${money(tC)} lost to churn. Growth from existing families is ${Math.round(tE/(tN + tE)*100)}% of the ARR added.</p>`; };
+OUT.effChart = R => { const Y = years(R), P = Y.map(y => planAt(R, y.t));
+  const mini = (title, vals, fmt, good, warn, cap) => { const W = 420, H = 220, L = 44, Rr = 10, T = 16, B = 26, n = vals.length;
+    const top = cap, bw = (W - L - Rr)/n, x = i => L + bw*(i + 0.5), y = v => T + (H - T - B)*(1 - Math.min(v, top)/top);
+    let g = `<rect x="${L}" width="${W - L - Rr}" y="${y(good)}" height="${y(0) - y(good)}" fill="var(--green-bg)"/><rect x="${L}" width="${W - L - Rr}" y="${y(warn)}" height="${y(good) - y(warn)}" fill="var(--amber-bg)"/><g class="grid">`;
+    for (let k = 0; k <= 4; k++){ const v = top*k/4; g += `<line x1="${L}" x2="${W-Rr}" y1="${y(v)}" y2="${y(v)}"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end">${fmt(v)}</text>`; } g += '</g>';
+    vals.forEach((v, i) => { const c = v <= good ? 'var(--greenl)' : v <= warn ? 'var(--amber)' : 'var(--red)';
+      g += `<rect x="${x(i) - bw*0.25}" width="${bw*0.5}" y="${y(v)}" height="${Math.max(1, y(0) - y(v))}" fill="${c}"/><text x="${x(i)}" y="${Math.max(T + 10, y(v) - 6)}" text-anchor="middle" style="font-weight:700;fill:var(--ink)">${v === 0 ? 'Cash +' : fmt(v)}</text><text x="${x(i)}" y="${H - 8}" text-anchor="middle">${Y[i].label}</text>`; });
+    return `<div><b style="font-size:13.5px">${title}</b><svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(title)}">${g}</svg></div>`; };
+  return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px">
+    ${mini('CAC payback, months (benchmark under 18)', P.map(p => p.payback), v => Math.round(v) + '', 18, 30, 36)}
+    ${mini('Burn multiple (benchmark under 2x)', P.map(p => p.burnMult), v => v.toFixed(1) + 'x', 2, 3, 4)}</div>
+    <div class="legend"><span><i style="background:var(--green-bg);height:10px;border:1px solid var(--greenl)"></i>Within benchmark</span><span><i style="background:var(--amber-bg);height:10px;border:1px solid var(--amber)"></i>Watch</span></div>`; };
 OUT.cases = () => { const rs = Object.entries(PRESETS).map(([k, p]) => [p.label, run(p)]); const R0 = rs[0][1]; const Y = years(R0);
   const pos = R => R.payg < 0 ? 'Not by ' + mLong(R.H - 1) : mLong(R.payg);
   return `<table><thead><tr><th>Cash, year end</th>${Y.map(y => `<th class="num">${y.label}</th>`).join('')}<th class="num">Lowest cash</th><th>Lowest in</th><th>Cash-flow positive from</th></tr></thead><tbody>
@@ -654,6 +693,27 @@ OUT.metricsCall = R => { const P = planAt(R, state.checkpoint); const w = [];
 function planRows(R){ return [['New families signed', R.sign, 'n'], ['Families live', R.fam, 'n'], ['ARR, end of month', R.arr, 'end'], ['New ARR', R.newArr], ['Collections', R.coll], ['Of which implementation', R.impl], ['Revenue recognized', R.rev],
   ...FNS.map(f => [f, R.byFn[f]]), ['R&D', R.rd], ['COGS', R.cogs], ['G&A', R.ga], ['Total cost', R.spend, 'tot'], ['Net cash flow', R.net], ['Raise', R.raise], ['Cash balance', R.cash, 'tot']]; }
 const STOCK = new Set(['Families live', 'ARR, end of month', 'Cash balance']);
+const QCOST = [['Product', '#5A5A5A', R => R.product], ['G&A', '#9A9A9A', R => R.ga], ['Customer success', '#1ED760', R => R.byFn['Customer success']],
+  ['Sales and channels', '#EE9D4E', R => R.byFn['Leadership'].map((v, i) => v + R.byFn['Marketing'][i] + R.byFn['Sales and channels'][i])]];
+OUT.qChart = R => { const Q = []; for (let q = 0; q*3 < R.H; q++){ const f = q*3, t = Math.min(R.H, f + 3) - 1; const [y, m] = ymOf(f); Q.push({f, t, label:'Q' + (Math.floor(m/3) + 1) + ' ' + String(y).slice(2)}); }
+  const rev = Q.map(q => sum(R.rev, q.f, q.t)), parts = Q.map(q => QCOST.map(([n, c, fn]) => sum(fn(R), q.f, q.t))), tot = parts.map(p => p.reduce((a, b) => a + b, 0)), cash = Q.map(q => R.cash[q.t]);
+  const W = 860, H = 330, L = 60, Rr = 62, T = 18, B = 30, n = Q.length;
+  const nice = v => { const mg = Math.pow(10, Math.floor(Math.log10(v))); return Math.ceil(v/(mg/2))*(mg/2); };
+  const top = nice(Math.max(...rev, ...tot)*1.08), ctop = nice(Math.max(...cash)*1.08), clo = Math.min(0, ...cash);
+  const gw = (W - L - Rr)/n, bw = gw*0.36, x = i => L + gw*i + gw/2, y = v => T + (H - T - B)*(1 - v/top), yc = v => T + (H - T - B)*(1 - (v - clo)/(ctop - clo));
+  let g = '<g class="grid">';
+  for (let k = 0; k <= 4; k++){ g += `<line x1="${L}" x2="${W-Rr}" y1="${y(top*k/4)}" y2="${y(top*k/4)}"/><text x="${L-6}" y="${y(top*k/4)+4}" text-anchor="end">${money(top*k/4)}</text><text x="${W-Rr+6}" y="${yc(clo + (ctop - clo)*k/4)+4}">${money(clo + (ctop - clo)*k/4)}</text>`; }
+  g += '</g>';
+  Q.forEach((q, i) => {
+    g += `<rect x="${x(i) - bw - 1}" width="${bw}" y="${y(rev[i])}" height="${y(0) - y(rev[i])}" fill="var(--btn)"><title>${q.label} revenue: ${money(rev[i])}</title></rect>`;
+    let acc = 0; parts[i].forEach((v, k) => { g += `<rect x="${x(i) + 1}" width="${bw}" y="${y(acc + v)}" height="${y(acc) - y(acc + v)}" fill="${QCOST[k][1]}"><title>${q.label} ${QCOST[k][0]}: ${money(v)}</title></rect>`; acc += v; });
+    if (i % 2 === 0 || n <= 8) g += `<text x="${x(i)}" y="${H - 9}" text-anchor="middle">${q.label}</text>`; });
+  const cross = rev.findIndex((v, i) => v >= tot[i] && rev.slice(i).every((w, j) => w >= tot[i + j]));
+  if (cross >= 0) g += `<line x1="${L + gw*cross}" x2="${L + gw*cross}" y1="${T}" y2="${H - B}" stroke="var(--muted)" stroke-dasharray="3 3"/><text x="${L + gw*cross + 6}" y="${T + 12}" style="fill:var(--ink);font-weight:700">Revenue passes cost, ${Q[cross].label}</text>`;
+  g += `<polyline fill="none" stroke="var(--ink)" stroke-width="2.2" points="${cash.map((v, i) => x(i) + ',' + yc(v)).join(' ')}"/>`;
+  const lo = cash.indexOf(Math.min(...cash)); g += `<circle cx="${x(lo)}" cy="${yc(cash[lo])}" r="4.5" fill="var(--ink)"/><text x="${x(lo)}" y="${yc(cash[lo]) + 18}" text-anchor="middle" style="fill:var(--ink);font-weight:700">Low ${money(cash[lo])}</text>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Revenue, cost by function and cash balance by quarter">${g}</svg>
+  <div class="legend"><span><i style="background:var(--btn);height:10px"></i>Revenue recognized</span>${QCOST.map(([n, c]) => `<span><i style="background:${c};height:10px"></i>${n}</span>`).join('')}<span><i style="background:var(--ink)"></i>Cash, quarter end (right axis)</span></div>`; };
 OUT.qTable = R => { const Q = []; for (let q = 0; q*3 < R.H; q++){ const f = q*3, t = Math.min(R.H, f + 3) - 1; const [y, m] = ymOf(f); Q.push({f, t, label:'Q' + (Math.floor(m/3) + 1) + ' ' + String(y).slice(2), yEnd: Math.floor(m/3) === 3}); }
   const rows = planRows(R).map(([n, v, t]) => [n === 'ARR, end of month' ? 'ARR, end of quarter' : n, v, t, STOCK.has(n)]);
   return `<table><thead><tr><th>Line</th>${Q.map(q => `<th class="num"${q.yEnd ? ' style="border-right:2px solid var(--line)"' : ''}>${q.label}</th>`).join('')}</tr></thead><tbody>
