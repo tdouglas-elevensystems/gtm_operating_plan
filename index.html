@@ -449,7 +449,8 @@ function renderMain(){
   <h2 class="sec">GTM team and triggers</h2>
   <p class="lead">Every GTM role, its monthly fully loaded cost and the milestone that starts it. Change a cost or a threshold and the whole plan moves. Starts are for the case selected at the top.</p>
   <div class="scroll teamtab" data-out="roles"></div>
-  <div class="chartblock" style="margin-top:16px"><h3>GTM team at year end</h3><p>Plus the existing CS team and BDR (Rayna, Cristina, Gabby, Beth), costed as existing teams.</p><div class="scroll" data-out="teamYE"></div></div>`;
+  <div class="chartblock" style="margin-top:16px"><h3>GTM team at year end</h3><p>Plus the existing CS team and BDR (Rayna, Cristina, Gabby, Beth), costed as existing teams.</p><div class="scroll" data-out="teamYE"></div>
+    <h3 style="margin-top:18px">Headcount and GTM cost</h3><p>Headcount counts new GTM roles, not the existing CS team and BDR. Cost is everything GTM spends in the year, including existing teams, programs and partner fees.</p><div data-out="teamChart"></div></div>`;
   else if (tab === 'quarterly') body = `
   <h2 class="sec">Operating plan by quarter</h2><p class="lead">16 quarters to Q4 2030. Families, ARR and cash are at quarter end; everything else is the quarter’s total. The CSV download stays monthly.</p>
   <div class="scroll plan" data-out="qTable"></div>
@@ -501,6 +502,26 @@ function teamAt(R, i){ const t = {}; TEAM.forEach(k => t[k] = 0); state.roles.fo
 OUT.teamYE = R => { const Y = years(R);
   return `<table><thead><tr><th>Role</th>${Y.map(y => `<th class="num">Dec ${y.label}</th>`).join('')}</tr></thead><tbody>${TEAM.map(k => `<tr><td>${k}</td>${Y.map(y => `<td class="num">${teamAt(R, y.t)[k]}</td>`).join('')}</tr>`).join('')}
   <tr class="tot"><td>Total GTM headcount</td>${Y.map(y => `<td class="num">${Object.values(teamAt(R, y.t)).reduce((a, b) => a + b, 0)}</td>`).join('')}</tr></tbody></table>`; };
+function stackChart(Y, cats, vals, cols, fmtTot, fmtAx, label){
+  const W = 430, H = 300, L = 54, Rr = 10, T = 24, B = 30, n = Y.length;
+  const tot = vals.map(v => cats.reduce((s, k) => s + (v[k] || 0), 0)); let top = Math.max(...tot)*1.15 || 1;
+  const mag = Math.pow(10, Math.floor(Math.log10(top))); top = Math.ceil(top/(mag/2))*(mag/2);
+  const bw = (W - L - Rr)/n, x = i => L + bw*(i + 0.5), y = v => T + (H - T - B)*(1 - v/top);
+  let g = '<g class="grid">';
+  for (let k = 0; k <= 4; k++){ const v = top*k/4; g += `<line x1="${L}" x2="${W-Rr}" y1="${y(v)}" y2="${y(v)}"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end">${fmtAx(v)}</text>`; }
+  g += '</g>';
+  Y.forEach((yr, i) => { let acc = 0; cats.forEach(k => { const v = vals[i][k] || 0; if (!v) return;
+      g += `<rect x="${x(i) - bw*0.3}" width="${bw*0.6}" y="${y(acc + v)}" height="${Math.max(0.5, y(acc) - y(acc + v))}" fill="${cols[k]}" stroke="var(--surface)" stroke-width="1"><title>${esc(k)}: ${fmtTot(v)}</title></rect>`; acc += v; });
+    g += `<text x="${x(i)}" y="${y(acc) - 6}" text-anchor="middle" style="font-weight:700;fill:var(--ink);font-size:12.5px">${fmtTot(acc)}</text><text x="${x(i)}" y="${H - 9}" text-anchor="middle">${yr.label}</text>`; });
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}">${g}</svg><div class="legend">${cats.map(k => `<span><i style="background:${cols[k]};height:10px"></i>${esc(k)}</span>`).join('')}</div>`;
+}
+const TEAMCOL = {'CRO':'#1175B6','Fractional leads':'#6DCFF6','Head of CS, full time':'#1ED760','CSMs':'#7FE3A4','Marketers':'#B48CF2','AEs':'#EE9D4E','SDR and partner manager':'#F6C99A'};
+const FNCOL = {'Leadership':'#1175B6','Customer success':'#1ED760','Marketing':'#B48CF2','Sales and channels':'#EE9D4E'};
+OUT.teamChart = R => { const Y = years(R);
+  const hc = Y.map(y => teamAt(R, y.t)), cost = Y.map(y => { const o = {}; FNS.forEach(f => o[f] = sum(R.byFn[f], y.f, y.t)); return o; });
+  return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px">
+    <div><b style="font-size:13.5px">GTM headcount at year end</b>${stackChart(Y, TEAM, hc, TEAMCOL, v => String(v), v => String(Math.round(v)), 'GTM headcount at year end by role')}</div>
+    <div><b style="font-size:13.5px">GTM cost for the year</b>${stackChart(Y, FNS, cost, FNCOL, money, money, 'GTM cost by function and year')}</div></div>`; };
 OUT.annual = R => { const Y = years(R); const row = (n, f, cls = '', fm = money) => `<tr class="${cls}"><td>${n}</td>${Y.map(y => `<td class="num">${fm(f(y))}</td>`).join('')}</tr>`;
   const S = (a, y) => sum(a, y.f, y.t); const n0 = v => v.toFixed(0);
   return `<table><thead><tr><th>${state.preset ? PRESETS[state.preset].label + ' case' : 'Custom case'}</th>${Y.map(y => `<th class="num">${y.label}</th>`).join('')}</tr></thead><tbody>
@@ -561,7 +582,7 @@ const METRICS = [
   {sec:'Growth and pipeline'},
   {k:'fam', name:'Families live (paying)', f:'int', dir:1, in:'num', bmt:'Series A readiness: 5 referenceable families', note:'The plan starts from Rafferty alone. Each family is a reference for the next.'},
   {k:'arr', name:'ARR', f:'usd', dir:1, in:'amt', bmt:'$1.5M to $3M ARR for a 2026 Series A', bm:v => v >= 1.5e6 ? 'g' : v >= 1.2e6 ? 'a' : 'r', note:'The number Rafferty will track first. Net contracted ARR, after discounts.'},
-  {k:'sign', name:'New families a month', f:'int', dir:1, in:'num', bmt:'Plan ramp: 1, then 2, then 3 a month', note:'Trailing 3-month average. The founding AE fires after 2 months at 2 a month.'},
+  {k:'sign', name:'New families a month', f:'int', dir:1, in:'num', bmt:'Realistic: 3, 8, 12, then 14 a quarter (Cristina)', note:'Trailing 3-month average. The founding AE fires after 2 months at 2 a month.'},
   {k:'acv', name:'Blended ARR per family (ACV)', f:'usd', dir:1, drv:true, bmt:'Over $100K: enterprise band, longer cycles, stickier', bm:v => v >= 50000 ? 'g' : v >= 40000 ? 'a' : 'r', note:'Planned at $113K: Cristina’s weighted average of the Lower, Mid and Upper profiles at list. Rafferty pays $56K. Replace with the actual average as contracts close.'},
   {k:'win', name:'Win rate, qualified opportunities', f:'pct', dir:1, in:'num', bmt:'25% to 35% mid-market; 12% to 18% enterprise', bm:v => v >= 12 && v <= 35 ? 'g' : 'a', note:'Measured from the Qualification stage in Playbk, so it reflects MEDDPICC discipline.'},
   {k:'cycle', name:'Sales cycle', f:'mo', dir:-1, in:'num', bmt:'1 to 3 months mid-market; 3 to 12 enterprise', bm:v => v <= 6 ? 'g' : 'a', note:'First meeting to signature. Referral deals should run shorter.'},
