@@ -183,9 +183,9 @@ function tierOf(m, v){ const n = Math.max(1, Math.round(v)); const t = MOD[m].ti
 /* ===== scenarios and starting values (GTM Stack and Cash Path workbook, Nov 2026) ===== */
 const PRESETS = {
   /* Cristina's EFO Pricing Model (Nov 18, 2026) is the Realistic case; Conservative and Upside flex its client mix, churn and signings */
-  cons: { label:'Conservative', blend:97000,  renew:86, r1:1, r2:2, r3:3, expand:15, fam0:1, byYear:[2/3, 2, 3, 10/3],   mix:'70 / 20 / 10', churnQ:3.75, perQ:'2, 6, 9 and 10' },
-  real: { label:'Realistic',    blend:113000, renew:90, r1:1, r2:2, r3:3, expand:15, fam0:1, byYear:[1, 8/3, 4, 14.25/3], mix:'55 / 30 / 15', churnQ:2.5, perQ:'3, 8, 12 and 14' },
-  up:   { label:'Upside',       blend:129000, renew:94, r1:1, r2:2, r3:3, expand:15, fam0:1, byYear:[4/3, 10/3, 5, 6],     mix:'40 / 40 / 20', churnQ:1.5, perQ:'4, 10, 15 and 18' }
+  cons: { label:'Conservative', blend:97000,  renew:86, r1:1, r2:2, r3:3, expand:15, fam0:1, byQ:[2, 6, 9, 10],      mix:'70 / 20 / 10', churnQ:3.75 },
+  real: { label:'Realistic',    blend:113000, renew:90, r1:1, r2:2, r3:3, expand:15, fam0:1, byQ:[3, 8, 12, 14.25], mix:'55 / 30 / 15', churnQ:2.5 },
+  up:   { label:'Upside',       blend:129000, renew:94, r1:1, r2:2, r3:3, expand:15, fam0:1, byQ:[4, 10, 15, 18],    mix:'40 / 40 / 20', churnQ:1.5 }
 };
 const FNS = ['Leadership','Customer success','Marketing','Sales and channels'];
 const TEAM = ['CRO','Fractional leads','Head of CS, full time','CSMs','Marketers','AEs','SDR and partner manager'];
@@ -221,7 +221,7 @@ const DEFAULT = {
   pf:{ financial:98, property:3, family:12, disc:20 },
   baseline:null, actuals:{}
 };
-delete DEFAULT.sc.label; DEFAULT.v41 = true; DEFAULT.v42 = true; DEFAULT.v43 = true;
+delete DEFAULT.sc.label; DEFAULT.v41 = true; DEFAULT.v42 = true; DEFAULT.v43 = true; DEFAULT.v44 = true;
 const clone = o => JSON.parse(JSON.stringify(o));
 function migrate(s){
   const d = clone(DEFAULT); if (!s || typeof s !== 'object') return d;
@@ -232,6 +232,7 @@ function migrate(s){
   if (!Array.isArray(s.roles) || !s.v41){ o.roles = clone(ROLES); o.v41 = true; }
   if (!s.v42){ o.sc = clone(DEFAULT.sc); o.preset = 'real'; o.v42 = true; }
   if (!s.v43){ o.sc.expand = 15; o.v43 = true; }
+  if (!s.v44){ if (Array.isArray(o.sc.byYear)) o.sc.byQ = o.sc.byYear.map(v => Math.round(v*3*100)/100); delete o.sc.byYear; o.v44 = true; }
   o.actuals = s.actuals || {}; return o;
 }
 let state = clone(DEFAULT);
@@ -257,7 +258,7 @@ function run(scIn){
   const sc = scIn || state.sc, I = state.inp, H = state.horizon, ren = num(sc.renew)/100, B = num(sc.blend), ex = 1 + num(sc.expand)/100, q = 1 - (1 - ren)/12, F0 = num(sc.fam0);
   const z = () => new Array(H).fill(0);
   const sign = z(), fam = z(), arr = z(), newArr = z(), impl = z(), coll = z(), rev = z(), yr = z();
-  for (let i = 0; i < H; i++){ const M = i + 1; sign[i] = Array.isArray(sc.byYear) ? num(sc.byYear[Math.min(sc.byYear.length - 1, Math.floor(i/12))]) : M < num(I.m2) ? num(sc.r1) : M < num(I.m3) ? num(sc.r2) : num(sc.r3);
+  for (let i = 0; i < H; i++){ const M = i + 1; sign[i] = Array.isArray(sc.byQ) ? num(sc.byQ[Math.min(sc.byQ.length - 1, Math.floor(i/12))])/3 : M < num(I.m2) ? num(sc.r1) : M < num(I.m3) ? num(sc.r2) : num(sc.r3);
     fam[i] = (i ? fam[i-1] : F0) * q + sign[i]; newArr[i] = sign[i]*B; yr[i] = Math.floor(i/12); }
   /* ARR by cohort: each family's ARR grows by the expansion rate at each anniversary */
   for (let i = 0; i < H; i++){ let a = F0*Math.pow(q, i + 1)*B*Math.pow(ex, yr[i]);
@@ -386,9 +387,10 @@ function renderAside(){
   ${fieldAmt('inp.otherCash', 'Other cash at start', 'Cash besides the round in January 2027. Confirm with Cristina.')}
 
   <h2>Signing ramp</h2>
-  ${Array.isArray(s.byYear) ? `<div class="card sm" style="display:grid;grid-template-columns:62px auto;gap:6px;align-items:center">
-    ${s.byYear.map((v, k) => `${inp('sc.byYear.' + k, +(+v).toFixed(2), 'number', 'step="0.25" min="0" aria-label="New families a month in ' + (2027 + k) + '"')}<span>/mo in ${2027 + k} (${+(v*3).toFixed(1)} a quarter)</span>`).join('')}
-  </div><div class="hint" style="margin:-4px 0 12px">${s.perQ ? 'New clients a quarter in 2027 to 2030: ' + esc(s.perQ) + '. ' : ''}Realistic is Cristina’s EFO model schedule (3, 8, 12 and 14 a quarter).</div>` : `<div class="card sm" style="display:grid;grid-template-columns:62px auto 1fr;gap:6px;align-items:center">
+  ${Array.isArray(s.byQ) ? `<div class="card sm" style="display:grid;grid-template-columns:70px auto;gap:6px;align-items:center">
+    <span class="tna">A quarter</span><span></span>
+    ${s.byQ.map((v, k) => `${inp('sc.byQ.' + k, v, 'number', 'step="1" min="0" aria-label="New families a quarter in ' + (2027 + k) + '"')}<span>in ${2027 + k}: <b data-mo="${k}"></b></span>`).join('')}
+  </div><div class="hint" style="margin:-4px 0 12px">New families signed each quarter. Realistic is Cristina’s EFO model schedule: 3, 8, 12 and 14.25 a quarter (14, 14, 14 and 15 in 2030).</div>` : `<div class="card sm" style="display:grid;grid-template-columns:62px auto 1fr;gap:6px;align-items:center">
     ${inp('sc.r1', s.r1, 'number', 'step="0.25" min="0" aria-label="Stage 1 new families per month"')}<span>/mo from</span><span>M1, ${mLong(0)}</span>
     ${inp('sc.r2', s.r2, 'number', 'step="0.25" min="0" aria-label="Stage 2 new families per month"')}<span>/mo from</span>${sel('inp.m2', state.inp.m2, monthOpts(2), 'data-full aria-label="Stage 2 start"')}
     ${inp('sc.r3', s.r3, 'number', 'step="0.25" min="0" aria-label="Stage 3 new families per month"')}<span>/mo from</span>${sel('inp.m3', state.inp.m3, monthOpts(3), 'data-full aria-label="Stage 3 start"')}
@@ -769,6 +771,7 @@ function refresh(){
     el('ch-flow').innerHTML = chart([{name:'Net cash', vals:R.net, color:'var(--greenl)', neg:'var(--red)', type:'bar'}, {name:'Collections', vals:R.coll, color:'var(--btn)'}, {name:'Spend', vals:R.spend, color:'var(--amber-line)'}], {fmt:money, label:'Monthly collections, spend and net cash', h:240});
   }
   document.querySelectorAll('output[data-for]').forEach(o => { o.textContent = FMT[o.dataset.fmt](getPath(o.dataset.for)); });
+  document.querySelectorAll('[data-mo]').forEach(e => { const k = +e.dataset.mo, v = num((state.sc.byQ || [])[k]); e.textContent = (+(v/3).toFixed(2)) + ' a month, ' + (+(v*4).toFixed(1)) + ' a year'; });
   document.querySelectorAll('[data-out]').forEach(e => { const f = OUT[e.dataset.out]; if (f) e.innerHTML = f(R); });
   document.querySelectorAll('#presets button[data-preset]').forEach(b => b.classList.toggle('active', b.dataset.preset === state.preset));
 }
